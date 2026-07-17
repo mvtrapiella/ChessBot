@@ -21,3 +21,9 @@ pub const BLACK_KING: u8 = 12;
 
 pub const NO_SQUARE: u8 = 64;
 
+pub struct Move{
+    pub origin: u8,
+    pub destination: u8,
+    pub promotion: Option<u8>,
+}
+
