@@ -50,6 +50,7 @@ const NOT_H_FILE: u64 = 0x7F7F7F7F7F7F7F7F; // -> 0111 1111 0111 11110111 111101
 // Static matrix with all the possible movements of the knight. The table is compiled one time at the beginning and then
 // we can access to all the possible positions of the knight instantly
 pub const KNIGHT_ATTACKS: [u64; 64] = calculate_knight_attacks();
+pub const BISHOP_ATTACKS: [u64; 64] = calculate_bishop_attacks();
 
 // Function that generates a table with all the precomputed movements of the horse
 const fn calculate_knight_attacks() -> [u64; 64] {
@@ -101,4 +102,7 @@ const fn calculate_knight_attacks() -> [u64; 64] {
     }
     
     attacks
+}
+
+const fn calculate_knight_attacks() -> [u64; 64] {
 }
