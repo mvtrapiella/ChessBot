@@ -1,7 +1,8 @@
 // Declare the submodules (this tells Rust to compile types.rs and state.rs)
 pub mod state;
 pub mod types;
-pub mod marks;
+pub mod masks;
+pub mod movegen;
 
 // Re-export the main items to make imports much cleaner in main.rs
 pub use state::Board;
