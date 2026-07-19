@@ -1,6 +1,7 @@
 // src/board/movegen.rs
 use super::state::Board;
-use super::marks::{KNIGHT_ATTACKS};
+use super::masks::knight_masks::KNIGHT_ATTACKS;
+use super::masks::bishop_masks::{BISHOP_MAGICS, BISHOP_SHIFTS, BISHOP_MASKS, BISHOP_OFFSETS, BISHOP_ATTACKS_TABLE};
 use super::types::{
     Move, WHITE_PAWN, WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING,
     BLACK_PAWN, BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING, NO_SQUARE,
@@ -15,14 +16,59 @@ impl Board {
             BLACK_PAWN => self.generate_black_pawn_moves(origin, &mut moves),
             WHITE_KNIGHT => self.generate_white_knight_moves(origin, &mut moves),
             BLACK_KNIGHT => self.generate_black_knight_moves(origin, &mut moves),
+            WHITE_BISHOP => self.generate_white_bishop_moves(origin, &mut moves),
+            BLACK_BISHOP => self.generate_black_bishop_moves(origin, &mut moves),
             _ => {},
         }
 
         moves
     }
 
-    fn generate_white_pawn_moves(&self, origin: u8, moves: &mut Vec<Move>) 
-    {
+    fn generate_white_bishop_moves(&self, origin: u8, moves: &mut Vec<Move>){
+        let square = origin as usize;
+        let blockers = self.all_pieces & BISHOP_MASKS[square];
+        let magic = BISHOP_MAGICS[square];
+        let shift = BISHOP_SHIFTS[square];
+        let offset = BISHOP_OFFSETS[square];
+        
+        let hash = (blockers.wrapping_mul(magic) >> shift) as usize;
+
+        let mut valid_attacks = BISHOP_ATTACKS_TABLE[hash + offset];
+
+        valid_attacks &= !self.white_pieces;
+
+        while valid_attacks != 0 {
+            let destination = valid_attacks.trailing_zeros() as u8;
+
+            moves.push(Move{origin: origin, destination: destination, promotion: None});
+
+            valid_attacks &= valid_attacks - 1;
+        }
+    }
+
+    fn generate_black_bishop_moves(&self, origin: u8, moves: &mut Vec<Move>){
+        let square = origin as usize;
+        let blockers = self.all_pieces & BISHOP_MASKS[square];
+        let magic = BISHOP_MAGICS[square];
+        let shift = BISHOP_SHIFTS[square];
+        let offset = BISHOP_OFFSETS[square];
+        
+        let hash = (blockers.wrapping_mul(magic) >> shift) as usize;
+
+        let mut valid_attacks = BISHOP_ATTACKS_TABLE[hash + offset];
+
+        valid_attacks &= !self.black_pieces;
+
+        while valid_attacks != 0 {
+            let destination = valid_attacks.trailing_zeros() as u8;
+
+            moves.push(Move{origin: origin, destination: destination, promotion: None});
+
+            valid_attacks &= valid_attacks - 1;
+        }
+    }
+
+    fn generate_white_pawn_moves(&self, origin: u8, mut moves: &mut Vec<Move>){
         let column = origin % 8;
 
         // First move of the white pawn. It can be moved to squares forward
@@ -112,7 +158,7 @@ impl Board {
     }
 
     fn generate_white_knight_moves(&self, origin: u8, moves: &mut Vec<Move>){
-        let valid_attacks = KNIGHT_ATTACKS[origin as usize] & !self.white_pieces;
+        let mut valid_attacks = KNIGHT_ATTACKS[origin as usize] & !self.white_pieces;
 
         while valid_attacks != 0 {
             // Native function of rust to count the number of zeros at the right of the least one
@@ -127,7 +173,7 @@ impl Board {
     }
 
     fn generate_black_knight_moves(&self, origin: u8, moves: &mut Vec<Move>){
-        let valid_attacks = KNIGHT_ATTACKS[origin as usize] & !self.black_pieces;
+        let mut valid_attacks = KNIGHT_ATTACKS[origin as usize] & !self.black_pieces;
 
         while valid_attacks != 0 {
             // Native function of rust to count the number of zeros at the right of the least one
@@ -141,8 +187,7 @@ impl Board {
         }
     }
 
-    fn generate_black_pawn_moves(&self, origin: u8, moves: &mut Vec<Move>)  
-    {
+    fn generate_black_pawn_moves(&self, origin: u8, mut moves: &mut Vec<Move>){
         let column = origin % 8;
 
         // First move of the black pawn. It can be moved two squares forward
