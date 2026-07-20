@@ -45,6 +45,25 @@ impl Board {
             // We have remove the least significant bit and make the LSB the next smaller bit
             valid_attacks &= valid_attacks - 1;
         }
+
+        // Squares that must be empty: f1(5), g1(6)
+        let short_castle_empty = 0x0000000000000060;
+        // Squares that must be empty: b1(1), c1(2), d1(3)
+        let long_castle_empty = 0x000000000000000E;
+
+        if ((short_castle_empty & self.all_pieces) == 0) && ((1u8 & self.castling_rights) != 0) {
+            // King
+            moves.push(Move{origin: origin, destination: 6, promotion: None});
+            // Rook
+            moves.push(Move{origin: 7, destination: 5, promotion: None});
+        }
+
+        if ((long_castle_empty & self.all_pieces) == 0) && ((2u8 & self.castling_rights) != 0) {
+            // King
+            moves.push(Move{origin: origin, destination: 2, promotion: None});
+            // Rook
+            moves.push(Move{origin: 0, destination: 3, promotion: None});
+        }
     }
 
     fn generate_black_king_moves(&self, origin: u8, moves: &mut Vec<Move>){
@@ -59,6 +78,25 @@ impl Board {
             // We eliminare the last one. Example -> 0100 1000 - 1 = 0100 0111 and if we apply 0100 0111 & 0100 1000 = 0100 0000
             // We have remove the least significant bit and make the LSB the next smaller bit
             valid_attacks &= valid_attacks - 1;
+        }
+
+        // Squares that must be empty: f8(61), g8(62)
+        let short_castle_empty = 0x6000000000000000;
+        // Squares that must be empty: b8(57), c8(58), d8(59)
+        let long_castle_empty = 0x0E00000000000000;
+
+        if ((short_castle_empty & self.all_pieces) == 0) && ((4u8 & self.castling_rights) != 0) {
+            // King
+            moves.push(Move{origin: origin, destination: 62, promotion: None});
+            // Rook
+            moves.push(Move{origin: 63, destination: 61, promotion: None});
+        }
+
+        if ((long_castle_empty & self.all_pieces) == 0) && ((8u8 & self.castling_rights) != 0) {
+            // King
+            moves.push(Move{origin: origin, destination: 58, promotion: None});
+            // Rook
+            moves.push(Move{origin: 56, destination: 59, promotion: None});
         }
     }
 
