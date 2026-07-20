@@ -21,10 +21,80 @@ impl Board {
             BLACK_BISHOP => self.generate_black_bishop_moves(origin, &mut moves),
             WHITE_ROOK => self.generate_white_rook_moves(origin, &mut moves),
             BLACK_ROOK => self.generate_black_rook_moves(origin, &mut moves),
+            WHITE_QUEEN => self.generate_white_queen_moves(origin, &mut moves),
+            BLACK_QUEEN => self.generate_black_queen_moves(origin, &mut moves),
             _ => {},
         }
 
         moves
+    }
+
+    fn generate_white_queen_moves(&self, origin: u8, moves: &mut Vec<Move>){
+        let square = origin as usize;
+
+        // Rook move
+        let rook_blockers = self.all_pieces & ROOK_MASKS[square];
+        let rook_magic = ROOK_MAGICS[square];
+        let rook_shift = ROOK_SHIFTS[square];
+        let rook_offset = ROOK_OFFSETS[square];
+
+        // Bishop move
+        let bishop_blockers = self.all_pieces & BISHOP_MASKS[square];
+        let bishop_magic = BISHOP_MAGICS[square];
+        let bishop_shift = BISHOP_SHIFTS[square];
+        let bishop_offset = BISHOP_OFFSETS[square];
+
+        let rook_hash = (rook_blockers.wrapping_mul(rook_magic) >> rook_shift) as usize;
+
+        let mut valid_attacks = ROOK_ATTACKS_TABLE[rook_hash + rook_offset];
+
+        let bishop_hash = (bishop_blockers.wrapping_mul(bishop_magic) >> bishop_shift) as usize;
+
+        valid_attacks |= BISHOP_ATTACKS_TABLE[bishop_hash + bishop_offset];
+
+        valid_attacks &= !self.white_pieces;
+
+        while valid_attacks != 0 {
+            let destination = valid_attacks.trailing_zeros() as u8;
+
+            moves.push(Move{origin: origin, destination: destination, promotion: None});
+
+            valid_attacks &= valid_attacks - 1;
+        }
+    }
+
+    fn generate_black_queen_moves(&self, origin: u8, moves: &mut Vec<Move>){
+        let square = origin as usize;
+
+        // Rook move
+        let rook_blockers = self.all_pieces & ROOK_MASKS[square];
+        let rook_magic = ROOK_MAGICS[square];
+        let rook_shift = ROOK_SHIFTS[square];
+        let rook_offset = ROOK_OFFSETS[square];
+
+        // Bishop move
+        let bishop_blockers = self.all_pieces & BISHOP_MASKS[square];
+        let bishop_magic = BISHOP_MAGICS[square];
+        let bishop_shift = BISHOP_SHIFTS[square];
+        let bishop_offset = BISHOP_OFFSETS[square];
+
+        let rook_hash = (rook_blockers.wrapping_mul(rook_magic) >> rook_shift) as usize;
+
+        let mut valid_attacks = ROOK_ATTACKS_TABLE[rook_hash + rook_offset];
+
+        let bishop_hash = (bishop_blockers.wrapping_mul(bishop_magic) >> bishop_shift) as usize;
+
+        valid_attacks |= BISHOP_ATTACKS_TABLE[bishop_hash + bishop_offset];
+
+        valid_attacks &= !self.black_pieces;
+
+        while valid_attacks != 0 {
+            let destination = valid_attacks.trailing_zeros() as u8;
+
+            moves.push(Move{origin: origin, destination: destination, promotion: None});
+
+            valid_attacks &= valid_attacks - 1;
+        }
     }
 
     fn generate_white_rook_moves(&self, origin: u8, moves: &mut Vec<Move>){
