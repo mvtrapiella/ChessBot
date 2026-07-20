@@ -1,5 +1,6 @@
 // src/board/movegen.rs
 use super::state::Board;
+use super::masks::king_masks::KING_ATTACKS;
 use super::masks::knight_masks::KNIGHT_ATTACKS;
 use super::masks::bishop_masks::{BISHOP_MAGICS, BISHOP_SHIFTS, BISHOP_MASKS, BISHOP_OFFSETS, BISHOP_ATTACKS_TABLE};
 use super::masks::rook_masks::{ROOK_MAGICS, ROOK_SHIFTS, ROOK_MASKS, ROOK_OFFSETS, ROOK_ATTACKS_TABLE};
@@ -23,10 +24,42 @@ impl Board {
             BLACK_ROOK => self.generate_black_rook_moves(origin, &mut moves),
             WHITE_QUEEN => self.generate_white_queen_moves(origin, &mut moves),
             BLACK_QUEEN => self.generate_black_queen_moves(origin, &mut moves),
+            WHITE_KING => self.generate_white_king_moves(origin, &mut moves),
+            BLACK_KING => self.generate_black_king_moves(origin, &mut moves),
             _ => {},
         }
 
         moves
+    }
+
+    fn generate_white_king_moves(&self, origin: u8, moves: &mut Vec<Move>){
+        let mut valid_attacks = KING_ATTACKS[origin as usize] & !self.white_pieces;
+
+        while valid_attacks != 0 {
+            // Native function of rust to count the number of zeros at the right of the least one
+            let destination = valid_attacks.trailing_zeros() as u8;
+
+            moves.push(Move{origin: origin, destination: destination, promotion: None});
+
+            // We eliminare the last one. Example -> 0100 1000 - 1 = 0100 0111 and if we apply 0100 0111 & 0100 1000 = 0100 0000
+            // We have remove the least significant bit and make the LSB the next smaller bit
+            valid_attacks &= valid_attacks - 1;
+        }
+    }
+
+    fn generate_black_king_moves(&self, origin: u8, moves: &mut Vec<Move>){
+        let mut valid_attacks = KING_ATTACKS[origin as usize] & !self.black_pieces;
+
+        while valid_attacks != 0 {
+            // Native function of rust to count the number of zeros at the right of the least one
+            let destination = valid_attacks.trailing_zeros() as u8;
+
+            moves.push(Move{origin: origin, destination: destination, promotion: None});
+
+            // We eliminare the last one. Example -> 0100 1000 - 1 = 0100 0111 and if we apply 0100 0111 & 0100 1000 = 0100 0000
+            // We have remove the least significant bit and make the LSB the next smaller bit
+            valid_attacks &= valid_attacks - 1;
+        }
     }
 
     fn generate_white_queen_moves(&self, origin: u8, moves: &mut Vec<Move>){
