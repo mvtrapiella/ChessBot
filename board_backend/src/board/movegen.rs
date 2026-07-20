@@ -26,7 +26,7 @@ impl Board {
             BLACK_QUEEN => self.generate_black_queen_moves(origin, &mut moves),
             WHITE_KING => self.generate_white_king_moves(origin, &mut moves),
             BLACK_KING => self.generate_black_king_moves(origin, &mut moves),
-            _ => {},
+            _ => panic!("move_generator called with invalid piece byte: {}", piece),
         }
 
         moves
