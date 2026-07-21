@@ -5,6 +5,15 @@ pub enum Color {
     Black = 1,
 }
 
+impl Color {
+    pub fn opposite(self) -> Color {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+}
+
 pub const EMPTY: u8 = 0;
 pub const WHITE_PAWN: u8 = 1;
 pub const WHITE_ROOK: u8 = 2;

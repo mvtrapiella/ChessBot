@@ -9,6 +9,24 @@ use super::types::{
 };
 
 impl Board{
+
+    pub fn is_in_check(&self, player: Color) -> bool{
+        let mut king_bitboard = 0u64;
+
+        match player{
+            Color::White => {
+                king_bitboard |= self.piece_bitboards[WHITE_KING as usize - 1];
+            },
+            Color::Black => {
+                king_bitboard |= self.piece_bitboards[BLACK_KING as usize - 1];
+            }
+        }
+
+        let king_square = king_bitboard.trailing_zeros() as u8;
+
+        return self.is_square_attacked(king_square, player.opposite());
+    }
+
     pub fn is_square_attacked(&self, square: u8, attacker_color: Color) -> bool {
         // CASES:
         // 1. Is being attacked by a pawn?
