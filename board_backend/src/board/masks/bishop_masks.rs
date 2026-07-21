@@ -1,3 +1,5 @@
+use super::common::{calculate_offsets, build_attacks_table};
+
 // Magic number for each square calculated by executing the magic_numbers main.rs
 pub const BISHOP_MAGICS: [u64; 64] = [
   0x40022202041c0080,  0x0004100092008240,  0x0022480040824040,  0x4402408d00100880,
@@ -38,25 +40,10 @@ pub static BISHOP_MASKS: [u64; 64] = calculate_all_bishop_masks();
 // but it can be that another square magical number give as the same index so it overlaps the cases of another square.
 // In order to fix that we add an offset that sums the number of cases of the previous square (first -> 0, second -> prev + 2^(prev bits) = 0 + 2^6 = 64...)
 // By doing this is like we are "booking" a full floor with space so all the cases of each square are sure to not overlap the cases of the other squares
-pub static BISHOP_OFFSETS: [usize; 64] = calculate_bishop_offsets();
+pub static BISHOP_OFFSETS: [usize; 64] = calculate_offsets(&BISHOP_SHIFTS);
 
 // The precalculated 5248 possible bishop movements
 pub static BISHOP_ATTACKS_TABLE: [u64; 5248] = calculate_all_bishop_attacks();
-
-const fn calculate_bishop_offsets() -> [usize; 64] {
-    let mut offsets = [0usize; 64];
-    let mut square = 0;
-    let mut cumulative = 0usize;
-
-    while square < 64 {
-        offsets[square] = cumulative;
-        let bits = 64 - BISHOP_SHIFTS[square];
-        cumulative += 1usize << bits;
-        square += 1;
-    }
-
-    offsets
-}
 
 const fn calculate_all_bishop_masks() -> [u64; 64] {
     let mut masks = [0u64; 64];
@@ -102,31 +89,6 @@ const fn calculate_all_bishop_masks() -> [u64; 64] {
     }
 
     masks
-}
-
-const fn set_blockers(index: i32,  mut mask: u64) -> u64 {
-    let mut blockers = 0u64;
-    let bits = mask.count_ones() as i32;
-
-    let mut i = 0;
-    while i < bits {
-        let bit_index = pop_lsb(&mut mask);
-        if (index & (1 << i)) != 0 {
-            blockers |= 1u64 << bit_index;
-        }
-        i += 1;
-    }
-    blockers
-}
-
-const fn pop_lsb(bb: &mut u64) -> i32 {
-    // If the number is already 0
-    if *bb == 0 { return -1; }
-    // This function counts the number of 0 at the right of the LSO, which is equivalent to the position index of the LSO
-    let lsb = bb.trailing_zeros() as i32;
-    // We use Brian Kernighan trick -> "turn off" the least significant one
-    *bb &= *bb - 1;
-    lsb
 }
 
 const fn bishop_attacks_bruteforce(sq: i32, blockers: u64) -> u64 {
@@ -182,39 +144,5 @@ const fn bishop_attacks_bruteforce(sq: i32, blockers: u64) -> u64 {
 }
 
 const fn calculate_all_bishop_attacks() -> [u64; 5248] {
-    let mut table = [0u64; 5248];
-    let mut square = 0;
-
-    while square < 64 {
-        let mask = BISHOP_MASKS[square];
-        let num_bits = mask.count_ones();
-        let num_combinations = 1u32 << num_bits; // 2^bits
-
-        // We extract the "magical properties" for that square in order to calculte the key (apply perfect hashing)
-        let magic = BISHOP_MAGICS[square];
-        let shift = BISHOP_SHIFTS[square];
-        let offset = BISHOP_OFFSETS[square];
-
-        // We map every obstacle case using the magic number
-        let mut i = 0u32;
-        while i < num_combinations {
-            // We generate the i case of blocking from the total num_combinarions for that square
-            let blockers = set_blockers(i as i32, mask);
-
-            // We calculate the real possibe bishop movements given the blocker
-            let real_attack = bishop_attacks_bruteforce(square as i32, blockers);
-
-            // We apply the perfecr hashing in order to obatain the key (hash) with which we will store the attack on the BISHOP_ATTACKS_TABLE
-            let hash = (blockers.wrapping_mul(magic) >> shift) as usize;
-
-            // We store the attack possibility using the offset + hash formula discussed early
-            table[offset + hash] = real_attack;
-
-            i += 1;
-        }
-
-        square += 1;
-    }
-
-    table
+    build_attacks_table!(5248, BISHOP_MASKS, BISHOP_MAGICS, BISHOP_SHIFTS, BISHOP_OFFSETS, bishop_attacks_bruteforce)
 }

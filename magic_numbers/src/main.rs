@@ -126,6 +126,79 @@ fn bishop_mask(sq: i32) -> u64 {
     result
 }
 
+fn rook_mask(sq: i32) -> u64 {
+    // The obstacle bitboard initially all 0
+    let mut result = 0u64;
+    // The row
+    let target_r = sq / 8;
+    // The column
+    let target_f = sq % 8;
+
+    // North
+    let (mut r, f) = (target_r + 1, target_f);
+    while r <= 6 { result |= 1u64 << (f + r * 8); r += 1; }
+
+    // South
+    let (mut r, f) = (target_r - 1, target_f);
+    while r > 0 { result |= 1u64 << (f + r * 8); r -= 1; }
+
+    // East
+    let (r, mut f) = (target_r, target_f + 1);
+    while f <= 6 { result |= 1u64 << (f + r * 8); f += 1; }
+
+    // West
+    let (r, mut f) = (target_r, target_f - 1);
+    while f > 0 { result |= 1u64 << (f + r * 8); f -= 1; }
+
+    result
+}
+
+fn rook_attacks_bruteforce(sq: i32, blockers: u64) -> u64 {
+    let mut result = 0u64;
+    // The row
+    let target_r = sq / 8;
+    // The column
+    let target_f = sq % 8;
+
+    // North
+    let (mut r, f) = (target_r + 1, target_f);
+    while r <= 7 { 
+        let bit = 1u64 << (f + r * 8); 
+        result |= bit;
+        if (blockers & bit) != 0 { break; }
+        r += 1; 
+    }
+
+    // South
+    let (mut r, f) = (target_r - 1, target_f);
+    while r >= 0 { 
+        let bit = 1u64 << (f + r * 8); 
+         result |= bit;
+         if (blockers & bit) != 0 { break; }
+        r -= 1; 
+    }
+
+    // East
+    let (r, mut f) = (target_r, target_f + 1);
+    while f <= 7 { 
+        let bit = 1u64 << (f + r * 8); 
+        result |= bit;
+        if (blockers & bit) != 0 { break; }
+        f += 1; 
+    }
+
+    // West
+    let (r, mut f) = (target_r, target_f - 1);
+    while f >= 0 { 
+        let bit = 1u64 << (f + r * 8); 
+        result |= bit;
+        if (blockers & bit) != 0 { break; }
+        f -= 1; 
+    }
+
+    result
+}
+
 // Given a blocker bitboard and a square it returns a bitboard with the actual possible movements
 fn bishop_attacks_bruteforce(sq: i32, blockers: u64) -> u64 {
     // The obstacle bitboard initially all 0
@@ -177,6 +250,55 @@ fn bishop_attacks_bruteforce(sq: i32, blockers: u64) -> u64 {
     }
 
     result
+}
+
+fn find_rook_magic(sq: i32, bits: i32, rng: &mut XorShift64) -> u64 {
+    let mask = rook_mask(sq);
+
+    let num_combinations = 1 << bits;
+
+    let mut b_table = vec![0u64; num_combinations];
+    let mut a_table = vec![0u64; num_combinations];
+
+    for i in 0..num_combinations {
+        b_table[i] = index_to_blockers(i as i32, bits, mask);
+        a_table[i] = rook_attacks_bruteforce(sq, b_table[i]);
+    }
+
+    for _ in 0..10_000_000 {
+        // Random number with small number of 1
+        let magic = rng.few_bits();
+
+        if count_bits((Wrapping(mask) * Wrapping(magic)).0 & 0xFF00000000000000) < 6 {
+            continue;
+        }
+
+        let mut used = vec![0u64; num_combinations];
+        // Check if the magic number is suitable
+        let mut fail = false;
+
+        for i in 0..num_combinations {
+            // Hash indexador: we pultiply the magic number by the mask of the i index case and then we shift the bits to the
+            // right in order to get the index by 64 - bits
+            let index = ((Wrapping(b_table[i]) * Wrapping(magic)).0 >> (64 - bits)) as usize;
+            
+            // I that position on the index 0 it means it is not occupy
+            if used[index] == 0 {
+                used[index] = a_table[i]; // Asignamos si está libre
+            } 
+            else if used[index] != a_table[i] {
+                fail = true; // destructive collision
+                break;
+            }
+        }
+
+        if !fail {
+            return magic; // Magic number found
+        }
+    }
+
+    panic!("No se pudo encontrar un número mágico para la casilla {}", sq);
+
 }
 
 // Find the magic number for a given square
@@ -266,14 +388,35 @@ const B_BITS: [i32; 64] = [
     6, 5, 5, 5, 5, 5, 5, 6
 ];
 
+// Number of relevance mask bits for a rook on each square
+pub const R_BITS: [i32; 64] = [
+    12, 11, 11, 11, 11, 11, 11, 12,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    12, 11, 11, 11, 11, 11, 11, 12,
+];
+
 fn main() {
     let mut rng = XorShift64::new(123456789); // Fixed seed for reproductibility, so the 64 magic number will be always be the same
     
     println!("pub const BISHOP_MAGICS: [u64; 64] = [");
     for square in 0..64 {
-        let magic = find_bishop_magic(square, B_BITS[square as usize], &mut rng);
+        let b_magic = find_bishop_magic(square, B_BITS[square as usize], &mut rng);
         // Print the magic number in hexadecimal for each square
-        print!("  0x{:016x},", magic);
+        print!("  0x{:016x},", b_magic);
+        if (square + 1) % 4 == 0 { println!(); }
+    }
+    println!("];");
+
+    println!("pub const ROOK_MAGICS: [u64; 64] = [");
+    for square in 0..64 {
+        let r_magic = find_rook_magic(square, R_BITS[square as usize], &mut rng);
+        // Print the magic number in hexadecimal for each square
+        print!("  0x{:016x},", r_magic);
         if (square + 1) % 4 == 0 { println!(); }
     }
     println!("];");
