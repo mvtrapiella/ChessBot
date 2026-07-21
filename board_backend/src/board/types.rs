@@ -30,6 +30,7 @@ pub const BLACK_KING: u8 = 12;
 
 pub const NO_SQUARE: u8 = 64;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Move{
     pub origin: u8,
     pub destination: u8,
