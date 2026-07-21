@@ -51,18 +51,14 @@ impl Board {
         // Squares that must be empty: b1(1), c1(2), d1(3)
         let long_castle_empty = 0x000000000000000E;
 
+        // Castling is represented as a single king Move; apply_move_bits (legality.rs) derives
+        // and moves the rook itself from the king's destination square.
         if ((short_castle_empty & self.all_pieces) == 0) && ((1u8 & self.castling_rights) != 0) {
-            // King
             moves.push(Move{origin: origin, destination: 6, promotion: None});
-            // Rook
-            moves.push(Move{origin: 7, destination: 5, promotion: None});
         }
 
         if ((long_castle_empty & self.all_pieces) == 0) && ((2u8 & self.castling_rights) != 0) {
-            // King
             moves.push(Move{origin: origin, destination: 2, promotion: None});
-            // Rook
-            moves.push(Move{origin: 0, destination: 3, promotion: None});
         }
     }
 
@@ -85,18 +81,14 @@ impl Board {
         // Squares that must be empty: b8(57), c8(58), d8(59)
         let long_castle_empty = 0x0E00000000000000;
 
+        // Castling is represented as a single king Move; apply_move_bits (legality.rs) derives
+        // and moves the rook itself from the king's destination square.
         if ((short_castle_empty & self.all_pieces) == 0) && ((4u8 & self.castling_rights) != 0) {
-            // King
             moves.push(Move{origin: origin, destination: 62, promotion: None});
-            // Rook
-            moves.push(Move{origin: 63, destination: 61, promotion: None});
         }
 
         if ((long_castle_empty & self.all_pieces) == 0) && ((8u8 & self.castling_rights) != 0) {
-            // King
             moves.push(Move{origin: origin, destination: 58, promotion: None});
-            // Rook
-            moves.push(Move{origin: 56, destination: 59, promotion: None});
         }
     }
 

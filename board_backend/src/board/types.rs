@@ -5,6 +5,15 @@ pub enum Color {
     Black = 1,
 }
 
+impl Color {
+    pub fn opposite(self) -> Color {
+        match self {
+            Color::White => Color::Black,
+            Color::Black => Color::White,
+        }
+    }
+}
+
 pub const EMPTY: u8 = 0;
 pub const WHITE_PAWN: u8 = 1;
 pub const WHITE_ROOK: u8 = 2;
@@ -21,6 +30,7 @@ pub const BLACK_KING: u8 = 12;
 
 pub const NO_SQUARE: u8 = 64;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Move{
     pub origin: u8,
     pub destination: u8,

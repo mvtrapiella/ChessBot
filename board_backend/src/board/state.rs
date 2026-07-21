@@ -2,6 +2,7 @@
 use super::types::Color::{self, White, Black};
 use super::types::{EMPTY, WHITE_PAWN, WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING, BLACK_PAWN, BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING};
 
+#[derive(Clone, Copy)]
 pub struct Board{
     /* Bitboards */
     // Each bitboard occupies 8 bytes (64 bits) so there is no padding and the register space is used efficientely
