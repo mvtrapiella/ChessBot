@@ -9,28 +9,16 @@ impl Board{
         let pseudo_legal = self.move_generator(origin, piece);
         let is_king = piece == WHITE_KING || piece == BLACK_KING;
 
-        let mut legal = Vec::new();
-        let mut i = 0;
-        while i < pseudo_legal.len() {
-            let mv = pseudo_legal[i];
-
-            // A king move that jumps 2 squares is a castle; movegen.rs emits it as this king
-            // move immediately followed by the paired rook move. Validate both as one unit.
+        // A king move that jumps 2 squares is a castle; castle_is_legal checks the king's
+        // path against the current board instead of simulating (apply_move_bits already
+        // derives and moves the rook itself from the king's destination square).
+        pseudo_legal.into_iter().filter(|mv| {
             if is_king && (mv.destination as i8 - mv.origin as i8).abs() == 2 {
-                if self.castle_is_legal(mover_color, &mv) {
-                    legal.push(mv);
-                    legal.push(pseudo_legal[i + 1]);
-                }
-                i += 2;
+                self.castle_is_legal(mover_color, mv)
             } else {
-                if self.simulate_move(&mv, mover_color) {
-                    legal.push(mv);
-                }
-                i += 1;
+                self.simulate_move(mv, mover_color)
             }
-        }
-
-        legal
+        }).collect()
     }
 
     // Castling doesn't need simulate_move's clone-and-check: the intervening squares are
@@ -58,6 +46,22 @@ impl Board{
                 Color::Black => mv.destination + 8,
             };
             self.squares[captured_square as usize] = EMPTY;
+        }
+
+        // Castling: also move the rook to its castled square. The king's destination
+        // uniquely identifies which castle this is, matching the squares movegen.rs
+        // already hardcodes for each of the four castling emissions.
+        let is_king = piece == WHITE_KING || piece == BLACK_KING;
+        if is_king && (mv.destination as i8 - mv.origin as i8).abs() == 2 {
+            let (rook_origin, rook_destination) = match mv.destination {
+                6 => (7, 5),
+                2 => (0, 3),
+                62 => (63, 61),
+                58 => (56, 59),
+                _ => unreachable!("king move of 2 squares that isn't a known castle destination"),
+            };
+            self.squares[rook_destination as usize] = self.squares[rook_origin as usize];
+            self.squares[rook_origin as usize] = EMPTY;
         }
 
         self.squares[mv.destination as usize] = mv.promotion.unwrap_or(piece);
