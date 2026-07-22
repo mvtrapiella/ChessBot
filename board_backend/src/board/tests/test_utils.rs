@@ -18,3 +18,16 @@ pub fn empty_board() -> Board {
 pub fn place(board: &mut Board, square: u8, piece: u8) {
     board.squares[square as usize] = piece;
 }
+
+// Cross-checks incrementally-updated bitboards against a full rebuild from squares[],
+// so a desync (as opposed to a squares[] mistake, which the other assertions already catch)
+// gets caught explicitly.
+pub fn assert_bitboards_consistent(board: &Board) {
+    let mut rebuilt = *board;
+    rebuilt.update_bitboards();
+
+    assert_eq!(board.piece_bitboards, rebuilt.piece_bitboards, "piece_bitboards inconsistent with squares[]");
+    assert_eq!(board.white_pieces, rebuilt.white_pieces, "white_pieces inconsistent with squares[]");
+    assert_eq!(board.black_pieces, rebuilt.black_pieces, "black_pieces inconsistent with squares[]");
+    assert_eq!(board.all_pieces, rebuilt.all_pieces, "all_pieces inconsistent with squares[]");
+}

@@ -38,6 +38,14 @@ impl Board {
         self.side_to_move = unsafe { std::mem::transmute(next_color_numeric) };
     }
 
+    pub fn reset_clock(&mut self){
+        self.halfmove_clock = 0;
+    }
+
+    pub fn increase_clock(&mut self){
+        self.halfmove_clock += 1;
+    }
+
     pub fn initialize_board(&mut self) {
         // --- WHITE PIECES ---
         self.squares[0] = WHITE_ROOK;

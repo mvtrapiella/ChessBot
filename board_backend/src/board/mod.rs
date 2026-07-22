@@ -5,6 +5,8 @@ pub mod masks;
 pub mod movegen;
 pub mod attacks;
 pub mod legality;
+pub mod make_move;
+pub mod position;
 #[cfg(test)]
 mod tests;
 
