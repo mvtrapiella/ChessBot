@@ -5,6 +5,8 @@ pub mod masks;
 pub mod movegen;
 pub mod attacks;
 pub mod legality;
+#[cfg(test)]
+mod tests;
 
 // Re-export the main items to make imports much cleaner in main.rs
 pub use state::Board;
