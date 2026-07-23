@@ -31,3 +31,16 @@ pub fn assert_bitboards_consistent(board: &Board) {
     assert_eq!(board.black_pieces, rebuilt.black_pieces, "black_pieces inconsistent with squares[]");
     assert_eq!(board.all_pieces, rebuilt.all_pieces, "all_pieces inconsistent with squares[]");
 }
+
+// Field-by-field comparison for make_move/undo_move round-trip tests.
+pub fn assert_boards_equal(a: &Board, b: &Board) {
+    assert_eq!(a.squares, b.squares, "squares[] mismatch");
+    assert_eq!(a.piece_bitboards, b.piece_bitboards, "piece_bitboards mismatch");
+    assert_eq!(a.white_pieces, b.white_pieces, "white_pieces mismatch");
+    assert_eq!(a.black_pieces, b.black_pieces, "black_pieces mismatch");
+    assert_eq!(a.all_pieces, b.all_pieces, "all_pieces mismatch");
+    assert_eq!(a.castling_rights, b.castling_rights, "castling_rights mismatch");
+    assert_eq!(a.en_passant_square, b.en_passant_square, "en_passant_square mismatch");
+    assert_eq!(a.halfmove_clock, b.halfmove_clock, "halfmove_clock mismatch");
+    assert_eq!(a.side_to_move, b.side_to_move, "side_to_move mismatch");
+}

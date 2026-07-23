@@ -147,4 +147,91 @@ impl Position {
         self.history.push(action);
         self.board.switch_turn();
     }
+
+    pub fn undo_move(&mut self){
+        if(self.history.is_empty()){
+            panic!("There are no previous moves to undo")
+        }
+        else{
+            let last_action: Action = self.history.pop().expect("");
+
+            // Restore previous values
+            self.board.castling_rights = last_action.previous_castling_rights;
+            self.board.en_passant_square = last_action.previous_en_passant_square;
+            self.board.halfmove_clock = last_action.previous_halfmove_clock;
+
+
+            // Restore squares
+            let mut rook_move: Option<(u8, u8)> = None; // (rook_origin, rook_destination)
+
+            // With capture
+            if last_action.captured_piece.is_some() {
+
+                let cap_sqr = last_action.captured_square.expect("There should be a captured square");
+                let cap_piece = last_action.captured_piece.expect("If there is a captured square there should be a captured piece");
+
+                // cap_sqr differs from mv.destination for en passant, so mv.destination must
+                // be cleared unconditionally (for a normal capture cap_sqr == mv.destination,
+                // so this is a harmless clear-then-immediately-refill of the same square).
+                self.board.squares[last_action.mv.destination as usize] = EMPTY;
+                self.board.squares[cap_sqr as usize] = cap_piece;
+            }
+            // No capture
+            else{
+                self.board.squares[last_action.mv.destination as usize] = EMPTY;
+
+                // The previous move was a castle
+                if last_action.moved_piece == WHITE_KING && (last_action.mv.origin as i8 - last_action.mv.destination as i8).abs() == 2 {
+                    rook_move = Some(match last_action.mv.destination {
+                        2 => (0, 3),
+                        6 => (7, 5),
+                        _ => panic!("white king jump of 2 squares to an unknown castle destination: {}", last_action.mv.destination),
+                    });
+                } else if last_action.moved_piece == BLACK_KING && (last_action.mv.origin as i8 - last_action.mv.destination as i8).abs() == 2 {
+                    rook_move = Some(match last_action.mv.destination {
+                        58 => (56, 59),
+                        62 => (63, 61),
+                        _ => panic!("black king jump of 2 squares to an unknown castle destination: {}", last_action.mv.destination),
+                    });
+                }
+
+                if let Some((rook_origin, rook_destination)) = rook_move {
+                    self.board.squares[rook_origin as usize] = self.board.squares[rook_destination as usize];
+                    self.board.squares[rook_destination as usize] = EMPTY;
+                }
+            }
+           
+            self.board.squares[last_action.mv.origin as usize] = last_action.moved_piece;
+
+            // Reset bitboards
+            let origin_mask = 1u64 << last_action.mv.origin;
+            let destination_mask = 1u64 << last_action.mv.destination;
+            let placed_piece = last_action.mv.promotion.unwrap_or(last_action.moved_piece);
+
+            if placed_piece == last_action.moved_piece {
+                self.board.piece_bitboards[last_action.moved_piece as usize - 1] ^= origin_mask | destination_mask;
+            } else {
+                // Promotion: the pawn disappears from origin, the new piece appears at destination.
+                self.board.piece_bitboards[last_action.moved_piece as usize - 1] ^= origin_mask;
+                self.board.piece_bitboards[placed_piece as usize - 1] ^= destination_mask;
+            }
+
+            if let Some((rook_origin, rook_destination)) = rook_move {
+                let rook_piece = self.board.squares[rook_origin as usize];
+                self.board.piece_bitboards[rook_piece as usize - 1] ^= (1u64 << rook_origin) | (1u64 << rook_destination);
+            }
+
+            if let (Some(captured), Some(csq)) = (last_action.captured_piece, last_action.captured_square) {
+                self.board.piece_bitboards[captured as usize - 1] ^= 1u64 << csq;
+            }
+
+            // fold is the equivalent to reduce in other languages and |acc, bb| acc | bb is the equivalent to: (acc, bb) => acc | bb a lamda expression
+            self.board.white_pieces = self.board.piece_bitboards[0..6].iter().fold(0u64, |acc, bb| acc | bb);
+            self.board.black_pieces = self.board.piece_bitboards[6..12].iter().fold(0u64, |acc, bb| acc | bb);
+            self.board.all_pieces = self.board.white_pieces | self.board.black_pieces;
+
+            // Change turn
+            self.board.switch_turn();
+        }
+    }
 }

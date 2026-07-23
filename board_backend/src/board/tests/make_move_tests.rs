@@ -3,7 +3,7 @@ use crate::board::state::Board;
 use crate::board::types::{
     Move, EMPTY, WHITE_KING, WHITE_ROOK, WHITE_PAWN, WHITE_QUEEN, BLACK_ROOK, BLACK_PAWN,
 };
-use super::test_utils::{empty_board, place, assert_bitboards_consistent};
+use super::test_utils::{empty_board, place, assert_bitboards_consistent, assert_boards_equal};
 
 fn position_with(pieces: &[(u8, u8)]) -> Position {
     let mut board: Board = empty_board();
@@ -55,5 +55,55 @@ fn en_passant_removes_pawn_from_correct_square() {
 
     assert_eq!(pos.board.squares[45], WHITE_PAWN);
     assert_eq!(pos.board.squares[37], EMPTY); // captured black pawn removed from f5, not f6
+    assert_bitboards_consistent(&pos.board);
+}
+
+#[test]
+fn undo_reverses_a_normal_capture() {
+    let mut pos = position_with(&[(4, WHITE_KING), (0, WHITE_ROOK), (7, BLACK_ROOK)]);
+    let before = pos.board;
+
+    pos.make_move(Move { origin: 0, destination: 7, promotion: None });
+    pos.undo_move();
+
+    assert_boards_equal(&before, &pos.board);
+    assert_bitboards_consistent(&pos.board);
+}
+
+#[test]
+fn undo_reverses_castling() {
+    let mut pos = position_with(&[(4, WHITE_KING), (7, WHITE_ROOK)]);
+    pos.board.castling_rights = 0b0001;
+    let before = pos.board;
+
+    pos.make_move(Move { origin: 4, destination: 6, promotion: None });
+    pos.undo_move();
+
+    assert_boards_equal(&before, &pos.board);
+    assert_bitboards_consistent(&pos.board);
+}
+
+#[test]
+fn undo_reverses_en_passant() {
+    let mut pos = position_with(&[(4, WHITE_KING), (36, WHITE_PAWN), (37, BLACK_PAWN)]);
+    pos.board.en_passant_square = 45;
+    let before = pos.board;
+
+    pos.make_move(Move { origin: 36, destination: 45, promotion: None });
+    pos.undo_move();
+
+    assert_boards_equal(&before, &pos.board);
+    assert_bitboards_consistent(&pos.board);
+}
+
+#[test]
+fn undo_reverses_promotion() {
+    let mut pos = position_with(&[(4, WHITE_KING), (52, WHITE_PAWN)]);
+    let before = pos.board;
+
+    pos.make_move(Move { origin: 52, destination: 60, promotion: Some(WHITE_QUEEN) });
+    pos.undo_move();
+
+    assert_boards_equal(&before, &pos.board);
     assert_bitboards_consistent(&pos.board);
 }
