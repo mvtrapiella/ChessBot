@@ -7,6 +7,7 @@ pub mod attacks;
 pub mod legality;
 pub mod make_move;
 pub mod position;
+pub mod evaluate;
 #[cfg(test)]
 mod tests;
 
