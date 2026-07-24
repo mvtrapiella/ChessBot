@@ -1,3 +1,5 @@
+use core::panic;
+
 use crate::board::{Board, Color};
 use super::types::{
     Move, EMPTY, WHITE_PAWN, WHITE_KING, BLACK_PAWN, BLACK_KING,
@@ -74,5 +76,32 @@ impl Board{
         clone.update_bitboards();
 
         !clone.is_in_check(mover_color)
+    }
+
+    pub fn all_legal_moves(&self) -> Vec<Move>{
+        let mut bitboard = 0u64;
+
+        match self.side_to_move {
+            Color::White => {
+                bitboard = self.white_pieces.clone();
+            },
+            Color::Black => {
+                bitboard = self.black_pieces.clone();
+            },
+            _ => { panic!("The side to move is neither black nor white: {:?}", self.side_to_move); }
+        }
+
+        let mut legal_moves: Vec<Move> = Vec::new();
+
+        while bitboard != 0{
+            let square = bitboard.trailing_zeros();
+            let piece = self.squares[square as usize]; 
+
+            legal_moves.extend(self.legal_moves(square as u8, piece));
+
+            bitboard &= bitboard - 1;
+        }
+
+        legal_moves
     }
 }
