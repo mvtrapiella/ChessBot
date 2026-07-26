@@ -1,3 +1,4 @@
+use crate::board::Board;
 use crate::board::position::Position;
 use crate::board::types::Move;
 
@@ -6,7 +7,7 @@ const CHECK_MATE: i32 = 1_000_000;
 
 impl Position{
     pub fn negamax(&mut self, depth: u32, ply: u32, mut alpha: i32, beta: i32) -> i32{
-        let legal_moves = self.board.all_legal_moves();
+        let mut legal_moves = self.board.all_legal_moves();
 
         // Terminal node: no legal moves means checkmate or stalemate. Checked before the
         // depth == 0 case so a mate discovered exactly at the horizon is still recognized
@@ -25,6 +26,8 @@ impl Position{
         if depth == 0 {
             return self.board.evaluate();
         }
+
+        self.order_moves(&mut legal_moves);
 
         let mut best = -INFINITY;
 
@@ -48,11 +51,15 @@ impl Position{
     }
 
     pub fn find_best_move(&mut self, depth: u32) -> Option<Move> {
-        let legal_moves = self.board.all_legal_moves();
+        let mut legal_moves: Vec<Move> = self.board.all_legal_moves();
 
         if legal_moves.is_empty() {
             return None;
         }
+
+        // Apply ordering
+        self.order_moves(&mut legal_moves);
+
 
         let mut alpha = -INFINITY;
         let beta = INFINITY;
@@ -87,5 +94,14 @@ impl Position{
         }
 
         best_move
+    }
+
+
+    pub fn order_moves(&self, moves: &mut [Move]) {
+        // Sort_unstable_by_key allow us to filter a Vec or Slice giving it a closure (in this case the score of the capture)
+        // It is more faster than the sort_by_key because in that case it matters the order of elements wtih the same result in the closure
+        // so a heap copy must be used (all of this internally in the method). We negate the score_move because the sort_unstable_by_key order from smaller to bigger so
+        // the most valuable captures will be last (contrary of what we want), so we negate the result
+        moves.sort_unstable_by_key(|mv| -self.board.score_move(mv));
     }
 }
