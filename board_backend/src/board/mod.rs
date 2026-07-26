@@ -8,6 +8,7 @@ pub mod legality;
 pub mod make_move;
 pub mod position;
 pub mod evaluate;
+pub mod negamax;
 #[cfg(test)]
 mod tests;
 
