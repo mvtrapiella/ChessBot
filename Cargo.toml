@@ -1,0 +1,6 @@
+[workspace]
+resolver = "2"
+members = [
+    "board_backend",
+    "magic_numbers",
+]
