@@ -1,4 +1,3 @@
-use crate::board::Board;
 use crate::board::position::Position;
 use crate::board::types::Move;
 
