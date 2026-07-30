@@ -1,5 +1,5 @@
 [package]
-name = "boar_backend"
+name = "board_backend"
 version = "0.1.0"
 edition = "2024"
 

@@ -12,6 +12,7 @@ pub fn empty_board() -> Board {
         castling_rights: 0,
         en_passant_square: NO_SQUARE,
         halfmove_clock: 0,
+        zobrian_hash: 0,
     }
 }
 

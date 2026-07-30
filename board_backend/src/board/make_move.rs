@@ -144,16 +144,23 @@ impl Position {
         self.board.black_pieces = self.board.piece_bitboards[6..12].iter().fold(0u64, |acc, bb| acc | bb);
         self.board.all_pieces = self.board.white_pieces | self.board.black_pieces;
 
-        self.history.push(action);
         self.board.switch_turn();
+
+        // Update the zobrian hash
+        self.board.update_zobrian_hash(&action);
+
+        self.history.push(action);
     }
 
     pub fn undo_move(&mut self){
-        if(self.history.is_empty()){
+        if self.history.is_empty() {
             panic!("There are no previous moves to undo")
         }
         else{
             let last_action: Action = self.history.pop().expect("");
+
+            // Update the zobrian hash
+            self.board.update_zobrian_hash(&last_action);
 
             // Restore previous values
             self.board.castling_rights = last_action.previous_castling_rights;

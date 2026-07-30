@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::board::position::Position;
 use crate::board::state::Board;
 use crate::board::types::{Color, NO_SQUARE};
@@ -13,11 +14,12 @@ fn starting_position() -> Position {
         castling_rights: 15,
         en_passant_square: NO_SQUARE,
         halfmove_clock: 0,
+        zobrian_hash: 0,
     };
     board.initialize_board();
     board.update_bitboards();
 
-    Position { board, history: Vec::new() }
+    Position { board, history: Vec::new(), transposition_table: HashMap::new() }
 }
 
 // Reference values from the Chess Programming Wiki for the standard starting position.

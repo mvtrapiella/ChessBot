@@ -400,6 +400,45 @@ pub const R_BITS: [i32; 64] = [
     12, 11, 11, 11, 11, 11, 11, 12,
 ];
 
+// Zobrist hashing doesn't need a search like find_bishop_magic/find_rook_magic above --
+// there's no structural property a key has to satisfy, so any well-distributed random u64
+// works. Uses rng.next() directly (full entropy) rather than rng.few_bits() (which ANDs three
+// calls together to get sparse, mostly-zero bit patterns) -- that sparsity was specifically
+// useful for magic number candidates, but would be a bad, collision-prone choice for keys
+// that just get XORed together.
+fn print_zobrist_keys(rng: &mut XorShift64) {
+    // One key per (piece type, square): 12 piece types (WHITE_PAWN..BLACK_KING) x 64 squares.
+    println!("pub const PIECE_SQUARE_KEYS: [[u64; 64]; 12] = [");
+    for _piece in 0..12 {
+        print!("  [");
+        for square in 0..64 {
+            print!("0x{:016x}, ", rng.next());
+            if (square + 1) % 4 == 0 { print!("\n   "); }
+        }
+        println!("],");
+    }
+    println!("];");
+
+    // XORed in whenever it's Black's turn.
+    println!("pub const SIDE_KEY: u64 = 0x{:016x};", rng.next());
+
+    // One key per castling_rights bit: white-short, white-long, black-short, black-long.
+    println!("pub const CASTLING_KEYS: [u64; 4] = [");
+    for _ in 0..4 {
+        print!("  0x{:016x},", rng.next());
+    }
+    println!();
+    println!("];");
+
+    // One key per file (a-h), XORed in when there's an active en passant target on that file.
+    println!("pub const EN_PASSANT_FILE_KEYS: [u64; 8] = [");
+    for _ in 0..8 {
+        print!("  0x{:016x},", rng.next());
+    }
+    println!();
+    println!("];");
+}
+
 fn main() {
     let mut rng = XorShift64::new(123456789); // Fixed seed for reproductibility, so the 64 magic number will be always be the same
     
@@ -420,4 +459,6 @@ fn main() {
         if (square + 1) % 4 == 0 { println!(); }
     }
     println!("];");
+
+    print_zobrist_keys(&mut rng);
 }
