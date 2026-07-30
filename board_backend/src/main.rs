@@ -17,6 +17,7 @@ fn main() {
         castling_rights: 15,        
         en_passant_square: NO_SQUARE, 
         halfmove_clock: 0,
+        zobrian_hash: 0,
     };
 
     board.initialize_board();

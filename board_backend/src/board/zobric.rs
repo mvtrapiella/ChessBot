@@ -1,4 +1,4 @@
-use crate::board::{Board, Color::Black, types::{BLACK_BISHOP, BLACK_KING, BLACK_KNIGHT, BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, NO_SQUARE, WHITE_BISHOP, WHITE_KING, WHITE_KNIGHT, WHITE_PAWN, WHITE_QUEEN, WHITE_ROOK}};
+use crate::board::{Board, Color::Black, make_move::Action, types::{BLACK_BISHOP, BLACK_KING, BLACK_KNIGHT, BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, Move, NO_SQUARE, WHITE_BISHOP, WHITE_KING, WHITE_KNIGHT, WHITE_PAWN, WHITE_QUEEN, WHITE_ROOK}};
 
 pub const PIECE_SQUARE_KEYS: [[u64; 64]; 12] = [
   [0xe4697ccaa7322bdf, 0x5a9ebf660b1d5848, 0xb99bcc514aa470f8, 0x4c0e58abc3000619, 
@@ -214,6 +214,32 @@ pub const EN_PASSANT_FILE_KEYS: [u64; 8] = [
   0xd5e2ced04d8c4826,  0xe0feb8ec356d9936,  0xc7f6f2b29a4fcf84,  0xd8e2ca48f74e311b,  0x86b86517647d8bb9,  0xf21975ca997cbeee,  0x1048efd0bc9a3c13,  0x36cf646fa5b86cab,
 ];
 
+// Exact: every move at this node was searched to completion without a cutoff, so `score`
+// is the position's real, true value -- safe to reuse outright.
+//
+// LowerBound (fail-high): a beta cutoff happened (alpha >= beta) before every move was
+// checked, because some move was already too good for the opponent to ever allow this
+// position to be reached. We stopped looking, so we never found out exactly how good --
+// all we know is the true value is *at least* `score`.
+//
+// UpperBound (fail-low): none of this node's moves managed to beat the alpha the caller
+// came in with, so nothing here is better than what the caller could already guarantee
+// elsewhere. All we know is the true value is *at most* `score`.
+pub enum Bound {
+    Exact,
+    LowerBound,
+    UpperBound,
+}
+
+pub struct TTEntry {
+    // The depth to which we have already explored the position (it has to be >= of the depth we want to explore)
+    pub depth: u32,
+    pub bound: Bound,
+    // The score obtained
+    pub score: i32,
+    // The move done
+    pub best_move: Move,
+}
 
 impl Board{
     pub fn calculate_zobric_hash(&self) -> u64{
@@ -296,5 +322,65 @@ impl Board{
         }
 
         result
+    }
+
+    pub fn update_zobrian_hash(&mut self, action: &Action) {
+      // The piece that actually ends up on destination -- the moved piece, unless this move
+      // is a promotion, in which case the pawn disappears and the promoted piece appears.
+      let placed_piece = action.mv.promotion.unwrap_or(action.moved_piece);
+
+      // Detect castling the same way make_move does: a king move that jumps 2 squares also
+      // relocates the rook, derived from the king's own destination square.
+      let is_king = action.moved_piece == WHITE_KING || action.moved_piece == BLACK_KING;
+      let rook_move: Option<(u8, u8)> = if is_king && (action.mv.origin as i8 - action.mv.destination as i8).abs() == 2 {
+        Some(match action.mv.destination {
+          2 => (0, 3),
+          6 => (7, 5),
+          58 => (56, 59),
+          62 => (63, 61),
+          _ => panic!("king move of 2 squares to an unknown castle destination: {}", action.mv.destination),
+        })
+      } else {
+        None
+      };
+
+      // Mover: out of origin, into destination (using placed_piece so promotion is handled).
+      self.zobrian_hash ^= PIECE_SQUARE_KEYS[(action.moved_piece - 1) as usize][action.mv.origin as usize];
+      self.zobrian_hash ^= PIECE_SQUARE_KEYS[(placed_piece - 1) as usize][action.mv.destination as usize];
+
+      // Captured piece (if any): removed from its actual square, which differs from
+      // destination for en passant.
+      if let (Some(captured_piece), Some(captured_square)) = (action.captured_piece, action.captured_square) {
+        self.zobrian_hash ^= PIECE_SQUARE_KEYS[(captured_piece - 1) as usize][captured_square as usize];
+      }
+
+      // Castling: the rook also relocates, out of its own origin and into its own destination.
+      if let Some((rook_origin, rook_destination)) = rook_move {
+        let rook_piece = if action.moved_piece == WHITE_KING { WHITE_ROOK } else { BLACK_ROOK };
+        self.zobrian_hash ^= PIECE_SQUARE_KEYS[(rook_piece - 1) as usize][rook_origin as usize];
+        self.zobrian_hash ^= PIECE_SQUARE_KEYS[(rook_piece - 1) as usize][rook_destination as usize];
+      }
+
+      // Side to move: flips every move, so this XOR is unconditional, not gated on the new value.
+      self.zobrian_hash ^= SIDE_KEY;
+
+      // Castling rights: only the bits that actually changed need toggling, not every bit
+      // that's currently set (a^b isolates exactly the differing bits between old and new).
+      let mut changed_castling_bits = self.castling_rights ^ action.previous_castling_rights;
+      while changed_castling_bits != 0 {
+        let index = changed_castling_bits.trailing_zeros();
+        self.zobrian_hash ^= CASTLING_KEYS[index as usize];
+
+        changed_castling_bits &= changed_castling_bits - 1;
+      }
+
+      // En passant: remove the old file's key if one was active, and separately add the new
+      // one if one is now active -- these are independent, not mutually exclusive.
+      if action.previous_en_passant_square != NO_SQUARE {
+        self.zobrian_hash ^= EN_PASSANT_FILE_KEYS[(action.previous_en_passant_square % 8) as usize];
+      }
+      if self.en_passant_square != NO_SQUARE {
+        self.zobrian_hash ^= EN_PASSANT_FILE_KEYS[(self.en_passant_square % 8) as usize];
+      }
     }
 }

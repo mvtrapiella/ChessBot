@@ -25,6 +25,7 @@ pub struct Board{
     // u8 -> 8 bits -> 1 byte  
     pub halfmove_clock: u8,  // Counter that if it reaches 100 (50 moves each player) without capturing a piece it is automatically a drawn 
     // Total is 4 bytes -> which makes that the register not generate padding -> perfect memory usage
+    pub zobrian_hash: u64,
 }
 
 impl Board {
@@ -117,6 +118,8 @@ impl Board {
 
         // We do the same for the bitboard representing all the pieces
         self.all_pieces = self.white_pieces | self.black_pieces;
+
+        self.zobrian_hash = self.calculate_zobric_hash();
     }
 
     pub fn print_board(&self) {
