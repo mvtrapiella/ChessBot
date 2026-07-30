@@ -6,6 +6,12 @@ use super::types::{
 };
 
 impl Board{
+
+    pub fn is_legal(&self, mv: Move) -> bool{
+        
+        return true;
+    }
+
     pub fn legal_moves(&self, origin: u8, piece: u8) -> Vec<Move> {
         let mover_color = if piece <= 6 { Color::White } else { Color::Black };
         let pseudo_legal = self.move_generator(origin, piece);

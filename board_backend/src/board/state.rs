@@ -1,3 +1,5 @@
+use crate::board::types::Move;
+
 // src/board/state.rs
 use super::types::Color::{self, White, Black};
 use super::types::{EMPTY, WHITE_PAWN, WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING, BLACK_PAWN, BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING};
@@ -166,4 +168,5 @@ impl Board {
 
         println!("{} player to move", side);        
     }
+
 }
