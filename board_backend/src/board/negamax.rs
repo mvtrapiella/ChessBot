@@ -1,11 +1,32 @@
 use crate::board::position::Position;
 use crate::board::types::Move;
+use crate::board::zobric::{Bound, TTEntry};
 
 const INFINITY: i32 = 2_000_000;
 const CHECK_MATE: i32 = 1_000_000;
 
 impl Position{
     pub fn negamax(&mut self, depth: u32, ply: u32, mut alpha: i32, beta: i32) -> i32{
+        let original_alpha = alpha;
+        let hash = self.board.zobrian_hash;
+
+        // Transposition table lookup: a hit is only usable if it was searched at least as
+        // deep as we need right now, and its bound is conclusive for the current alpha/beta
+        // window. This runs before move generation so a hit skips that work entirely.
+        // Terminal (checkmate/stalemate) and depth==0 leaves are never stored below (neither
+        // explores any moves, so there's no best_move to record), so a hit here can never be
+        // mistaken for one of those -- it's always a real, previously-completed search.
+        if let Some(entry) = self.transposition_table.get(&hash) {
+            if entry.depth >= depth {
+                match entry.bound {
+                    Bound::Exact => return entry.score,
+                    Bound::LowerBound if entry.score >= beta => return entry.score,
+                    Bound::UpperBound if entry.score <= alpha => return entry.score,
+                    _ => {}
+                }
+            }
+        }
+
         let mut legal_moves = self.board.all_legal_moves();
 
         // Terminal node: no legal moves means checkmate or stalemate. Checked before the
@@ -29,6 +50,7 @@ impl Position{
         self.order_moves(&mut legal_moves);
 
         let mut best = -INFINITY;
+        let mut best_move: Option<Move> = None;
 
         for m in legal_moves {
             self.make_move(m);
@@ -37,6 +59,7 @@ impl Position{
 
             if score > best {
                 best = score;
+                best_move = Some(m);
             }
             if best > alpha {
                 alpha = best;
@@ -45,6 +68,23 @@ impl Position{
                 break;
             }
         }
+
+        // Classify which kind of bound this result represents, then store it for reuse by
+        // any future call that transposes into this same position.
+        let bound = if best >= beta {
+            Bound::LowerBound
+        } else if best <= original_alpha {
+            Bound::UpperBound
+        } else {
+            Bound::Exact
+        };
+
+        self.transposition_table.insert(hash, TTEntry {
+            depth,
+            bound,
+            score: best,
+            best_move: best_move.expect("legal_moves was non-empty, so the loop ran at least once"),
+        });
 
         best
     }

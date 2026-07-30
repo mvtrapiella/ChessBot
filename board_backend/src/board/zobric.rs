@@ -225,12 +225,14 @@ pub const EN_PASSANT_FILE_KEYS: [u64; 8] = [
 // UpperBound (fail-low): none of this node's moves managed to beat the alpha the caller
 // came in with, so nothing here is better than what the caller could already guarantee
 // elsewhere. All we know is the true value is *at most* `score`.
+#[derive(Clone, Copy)]
 pub enum Bound {
     Exact,
     LowerBound,
     UpperBound,
 }
 
+#[derive(Clone, Copy)]
 pub struct TTEntry {
     // The depth to which we have already explored the position (it has to be >= of the depth we want to explore)
     pub depth: u32,
