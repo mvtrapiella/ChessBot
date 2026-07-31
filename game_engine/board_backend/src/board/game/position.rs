@@ -11,7 +11,7 @@ use crate::board::types::{
 };
 use crate::board::zobric::TTEntry;
 
-use super::state::Board;
+use crate::board::state::Board;
 use super::make_move::Action;
 
 
@@ -34,11 +34,11 @@ enum GameState{
 impl Position{
     pub fn game_play(&mut self, depth: u32){
         let user_color = self.color_selection();
-        self.board.print_board();
+        self.board.print_board(user_color);
 
         while self.check_game_state() == InProgress{
             self.user_make_move(user_color, depth);
-            self.board.print_board();
+            self.board.print_board(user_color);
         }
     }
 

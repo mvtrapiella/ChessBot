@@ -1,7 +1,7 @@
 use core::panic;
 
 use crate::board::{Board, Color};
-use super::types::{
+use crate::board::types::{
     Move, EMPTY, WHITE_PAWN, WHITE_KING, BLACK_PAWN, BLACK_KING,
 };
 
