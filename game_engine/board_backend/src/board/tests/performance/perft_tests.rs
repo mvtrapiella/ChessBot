@@ -19,7 +19,7 @@ fn starting_position() -> Position {
     board.initialize_board();
     board.update_bitboards();
 
-    Position { board, history: Vec::new(), transposition_table: HashMap::new() }
+    Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new() }
 }
 
 // Reference values from the Chess Programming Wiki for the standard starting position.

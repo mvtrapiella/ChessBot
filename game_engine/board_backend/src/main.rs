@@ -44,7 +44,7 @@ fn main() {
     board.initialize_board();
     board.update_bitboards();
 
-    let mut position = Position { board, history: Vec::new(), transposition_table: HashMap::new() };
+    let mut position = Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new() };
     
     let depth = ask_for_depth();
     position.game_play(depth);
