@@ -122,39 +122,73 @@ impl Board {
         self.zobrian_hash = self.calculate_zobric_hash();
     }
 
-    pub fn print_board(&self) {
+    pub fn print_board(&self, player_color: Color) {
         println!("\n  +-------------------------------+");
 
         // We start by the end so in the console the whites appears under the black ones (the blacks are the first printed)
-        for rank in (0..8).rev() {
-            // We print the file number
-            print!("{} | ", rank + 1);
+        if player_color == White{
+            for rank in (0..8).rev() {
+                // We print the file number
+                print!("{} | ", rank + 1);
 
-            for file in 0..8 {
-                let square_index = 8 * rank + file;
-                let piece = self.squares[square_index];
+                for file in 0..8 {
+                    let square_index = 8 * rank + file;
+                    let piece = self.squares[square_index];
 
-                let piece_char = match piece {
-                    1 => "♙", // White Pawn
-                    2 => "♖", // White Rook
-                    3 => "♘", // White Knight
-                    4 => "♗", // White Bishop
-                    5 => "♕", // White Queen
-                    6 => "♔", // White King
-                    7 => "♟", // Black Pawn
-                    8 => "♜", // Black Rook
-                    9 => "♞", // Black Knight
-                    10 => "♝", // Black Bishop
-                    11 => "♛", // Black Queen
-                    12 => "♚", // Black King
-                    _ => ".",  // Empty
-                };
-                
-                print!("{} | ", piece_char);
+                    let piece_char = match piece {
+                        1 => "♙", // White Pawn
+                        2 => "♖", // White Rook
+                        3 => "♘", // White Knight
+                        4 => "♗", // White Bishop
+                        5 => "♕", // White Queen
+                        6 => "♔", // White King
+                        7 => "♟", // Black Pawn
+                        8 => "♜", // Black Rook
+                        9 => "♞", // Black Knight
+                        10 => "♝", // Black Bishop
+                        11 => "♛", // Black Queen
+                        12 => "♚", // Black King
+                        _ => ".",  // Empty
+                    };
+                    
+                    print!("{} | ", piece_char);
+                }
+
+                println!("");
             }
-
-            println!("");
         }
+        else{
+            for rank in 0..8 {
+                // We print the file number
+                print!("{} | ", rank + 1);
+
+                for file in 0..8 {
+                    let square_index = 8 * rank + file;
+                    let piece = self.squares[square_index];
+
+                    let piece_char = match piece {
+                        1 => "♙", // White Pawn
+                        2 => "♖", // White Rook
+                        3 => "♘", // White Knight
+                        4 => "♗", // White Bishop
+                        5 => "♕", // White Queen
+                        6 => "♔", // White King
+                        7 => "♟", // Black Pawn
+                        8 => "♜", // Black Rook
+                        9 => "♞", // Black Knight
+                        10 => "♝", // Black Bishop
+                        11 => "♛", // Black Queen
+                        12 => "♚", // Black King
+                        _ => ".",  // Empty
+                    };
+                    
+                    print!("{} | ", piece_char);
+                }
+
+                println!("");
+            }
+        }
+        
 
         println!("  +-------------------------------+");
         println!("    a   b   c   d   e   f   g   h\n");
@@ -166,4 +200,5 @@ impl Board {
 
         println!("{} player to move", side);        
     }
+
 }

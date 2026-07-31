@@ -64,7 +64,7 @@ macro_rules! build_attacks_table {
 
             let mut i = 0u32;
             while i < num_combinations {
-                let blockers = crate::board::masks::common::set_blockers(i as i32, mask);
+                let blockers = super::common::set_blockers(i as i32, mask);
                 let real_attack = $bruteforce(square as i32, blockers);
                 let hash = (blockers.wrapping_mul(magic) >> shift) as usize;
 

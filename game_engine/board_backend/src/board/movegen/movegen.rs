@@ -1,10 +1,10 @@
 // src/board/movegen.rs
-use super::state::Board;
+use crate::board::state::Board;
 use super::masks::king_masks::KING_ATTACKS;
 use super::masks::knight_masks::KNIGHT_ATTACKS;
 use super::masks::bishop_masks::{BISHOP_MAGICS, BISHOP_SHIFTS, BISHOP_MASKS, BISHOP_OFFSETS, BISHOP_ATTACKS_TABLE};
 use super::masks::rook_masks::{ROOK_MAGICS, ROOK_SHIFTS, ROOK_MASKS, ROOK_OFFSETS, ROOK_ATTACKS_TABLE};
-use super::types::{
+use crate::board::types::{
     Move, WHITE_PAWN, WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING,
     BLACK_PAWN, BLACK_ROOK, BLACK_KNIGHT, BLACK_BISHOP, BLACK_QUEEN, BLACK_KING, NO_SQUARE,
 };
