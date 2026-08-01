@@ -4,7 +4,6 @@ use std::io::stdin;
 use std::println;
 
 use crate::board::Color::{Black, White};
-use crate::board::position::GameState::{BlackLost, Drawn, InProgress, WhiteLost};
 use crate::board::types::{
     Move, Color, WHITE_PAWN, WHITE_QUEEN, WHITE_ROOK, WHITE_BISHOP, WHITE_KNIGHT,
     BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, BLACK_BISHOP, BLACK_KNIGHT,
@@ -27,11 +26,24 @@ pub struct Position{
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-enum GameState{
-    Drawn,
-    WhiteLost,
-    BlackLost,
+pub enum DrawReason {
+    Stalemate,
+    FiftyMoveRule,
+    InsufficientMaterial,
+    ThreefoldRepetition,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum GameStatus {
     InProgress,
+    WhiteWon,
+    BlackWon,
+    Drawn(DrawReason),
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum MoveError {
+    IllegalMove,
 }
 
 
@@ -42,11 +54,33 @@ impl Position{
         self.position_history.push(self.board.zobrian_hash);
         self.board.print_board(user_color);
 
-        while self.check_game_state() == InProgress{
+        while self.game_status() == GameStatus::InProgress{
             self.user_make_move(user_color, depth);
             self.position_history.push(self.board.zobrian_hash);
             self.board.print_board(user_color);
         }
+
+        Self::print_game_over(self.game_status());
+    }
+
+    fn print_game_over(status: GameStatus) {
+        match status {
+            GameStatus::Drawn(DrawReason::Stalemate) => println!("Drawn by stalemate"),
+            GameStatus::Drawn(DrawReason::FiftyMoveRule) => println!("Drawn by the 50-move rule"),
+            GameStatus::Drawn(DrawReason::InsufficientMaterial) => println!("Drawn by insufficient material"),
+            GameStatus::Drawn(DrawReason::ThreefoldRepetition) => println!("Drawn by threefold repetition"),
+            GameStatus::WhiteWon => println!("White won"),
+            GameStatus::BlackWon => println!("Black won"),
+            GameStatus::InProgress => {}
+        }
+    }
+
+    // Apply a move given in UCI-style square notation ("e2e4", "e7e8q"). Only accepts
+    // moves that are actually legal in this position; the turn is switched internally.
+    pub fn apply_move_str(&mut self, input: &str) -> Result<(), MoveError> {
+        let mv = self.parse_legal_move(input).ok_or(MoveError::IllegalMove)?;
+        self.make_move(mv);
+        Ok(())
     }
 
     fn user_make_move(&mut self, user_color: Color, depth: u32){
@@ -82,35 +116,31 @@ impl Position{
         }
     }
 
-    fn check_game_state(&self) -> GameState{
+    pub fn game_status(&self) -> GameStatus{
         if self.board.all_legal_moves().is_empty() {
             if !self.board.is_in_check(self.board.side_to_move) {
-                println!("Drawn by stalemate");
-                return Drawn;
+                return GameStatus::Drawn(DrawReason::Stalemate);
             }
 
             return match self.board.side_to_move {
-                Color::White => { println!("Black won"); WhiteLost },
-                Color::Black => { println!("White won"); BlackLost },
+                Color::White => GameStatus::BlackWon,
+                Color::Black => GameStatus::WhiteWon,
             };
         }
 
         if self.board.halfmove_clock == 100 {
-            println!("Drawn by the 50-move rule");
-            return Drawn;
+            return GameStatus::Drawn(DrawReason::FiftyMoveRule);
         }
 
         if self.is_insufficient_material() {
-            println!("Drawn by insufficient material");
-            return Drawn;
+            return GameStatus::Drawn(DrawReason::InsufficientMaterial);
         }
 
         if self.is_threefold_repetition() {
-            println!("Drawn by threefold repetition");
-            return Drawn;
+            return GameStatus::Drawn(DrawReason::ThreefoldRepetition);
         }
 
-        InProgress
+        GameStatus::InProgress
     }
 
     // No pawns/rooks/queens anywhere, and at most one minor piece (knight or bishop)
