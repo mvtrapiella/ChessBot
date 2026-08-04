@@ -3,4 +3,5 @@ resolver = "2"
 members = [
     "game_engine/board_backend",
     "game_engine/magic_numbers",
+    "game_engine/web_server",
 ]

@@ -1,13 +1,10 @@
 // src/main.rs
-mod board;
-
 use std::collections::HashMap;
 use std::io::stdin;
 
-use board::state::Board;
-use board::types::{Color, NO_SQUARE};
-
-use crate::board::position::{self, Position};
+use board_backend::board::state::Board;
+use board_backend::board::types::{Color, NO_SQUARE};
+use board_backend::board::position::Position;
 
 fn ask_for_depth() -> u32 {
     loop {
