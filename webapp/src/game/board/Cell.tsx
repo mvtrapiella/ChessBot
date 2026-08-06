@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react'
 import bB from '../../assets/bB.svg'
 import bK from '../../assets/bK.svg'
 import bN from '../../assets/bN.svg'
@@ -22,22 +23,32 @@ type CellProps = {
     isLight: boolean
     isSelected: boolean
     isHighlighted: boolean
+    isMarked: boolean
     onClick: () => void
+    onMouseDown: (event: MouseEvent) => void
+    onMouseUp: (event: MouseEvent) => void
 }
 
-function Cell({ piece, isLight, isSelected, isHighlighted, onClick }: CellProps) {
+function Cell({ piece, isLight, isSelected, isHighlighted, isMarked, onClick, onMouseDown, onMouseUp }: CellProps) {
     const asset = PIECE_ASSETS[piece]
 
     const className = [
         'cell',
         isLight ? 'cell-light' : 'cell-dark',
         isSelected ? 'cell-selected' : '',
+        isMarked ? 'cell-marked' : '',
     ].filter(Boolean).join(' ')
 
     return (
-        <div className={className} onClick={onClick}>
+        <div
+            className={className}
+            onClick={onClick}
+            onMouseDown={onMouseDown}
+            onMouseUp={onMouseUp}
+            onDragStart={(event) => event.preventDefault()}
+        >
             {isHighlighted && <div className="cell-highlight" />}
-            {asset && <img src={asset} alt="" className="cell-piece" />}
+            {asset && <img src={asset} alt="" className="cell-piece" draggable={false} />}
         </div>
     )
 }
