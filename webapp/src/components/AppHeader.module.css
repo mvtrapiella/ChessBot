@@ -1,0 +1,31 @@
+.header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-7);
+}
+
+.wordmark {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(28px, 4vw, 40px);
+    letter-spacing: 0.28em;
+    color: var(--color-ivory);
+}
+
+.tagline {
+    margin: 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ash);
+}
+
+.rule {
+    width: 72px;
+    height: 2px;
+    margin-top: var(--space-2);
+    background: linear-gradient(90deg, var(--color-brass), transparent);
+}

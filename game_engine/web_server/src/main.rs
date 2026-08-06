@@ -23,8 +23,8 @@ async fn main() {
     // Allow the Vite dev server to call this API from the browser
     let cors = CorsLayer::new()
         .allow_origin([
-            "http://localhost:5173".parse::<HeaderValue>().unwrap(),
-            "http://127.0.0.1:5173".parse::<HeaderValue>().unwrap(),
+            "http://localhost:5175".parse::<HeaderValue>().unwrap(),
+            "http://127.0.0.1:5175".parse::<HeaderValue>().unwrap(),
         ])
         .allow_methods([Method::GET, Method::POST])
         .allow_headers([CONTENT_TYPE]);
