@@ -61,27 +61,37 @@ function applyMoveLocally(game: GameStateDTO, origin: number, destination: numbe
     }
 }
 
-function statusMessage(game: GameStateDTO): string | null {
+function drawReasonMessage(game: GameStateDTO): string {
+    switch (game.drawReason) {
+        case 'STALEMATE':
+            return 'By stalemate'
+        case 'FIFTY_MOVE_RULE':
+            return 'By the 50-move rule'
+        case 'INSUFFICIENT_MATERIAL':
+            return 'By insufficient material'
+        case 'THREEFOLD_REPETITION':
+            return 'By threefold repetition'
+        default:
+            return ''
+    }
+}
+
+// Headline for the end-of-game modal. "Won" always means the *bot's* color
+// won -- it's the human's own color that decides whether that reads as a
+// win or a loss for them.
+function endGameHeadline(game: GameStateDTO, surrendered: boolean): string {
+    if (surrendered) {
+        return 'Bot wins'
+    }
     switch (game.status) {
         case 'WHITE_WON':
-            return 'White won'
+            return game.userColor === 'WHITE' ? 'You win!' : 'Bot wins'
         case 'BLACK_WON':
-            return 'Black won'
+            return game.userColor === 'BLACK' ? 'You win!' : 'Bot wins'
         case 'DRAWN':
-            switch (game.drawReason) {
-                case 'STALEMATE':
-                    return 'Drawn by stalemate'
-                case 'FIFTY_MOVE_RULE':
-                    return 'Drawn by the 50-move rule'
-                case 'INSUFFICIENT_MATERIAL':
-                    return 'Drawn by insufficient material'
-                case 'THREEFOLD_REPETITION':
-                    return 'Drawn by threefold repetition'
-                default:
-                    return 'Drawn'
-            }
+            return 'Draw'
         default:
-            return null
+            return ''
     }
 }
 
@@ -94,7 +104,7 @@ function GameWindow() {
     const [highlightedSquares, setHighlightedSquares] = useState<number[]>([])
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
-    const [showSurrenderModal, setShowSurrenderModal] = useState(false)
+    const [surrendered, setSurrendered] = useState(false)
 
     useEffect(() => {
         if (!gameId) return
@@ -148,6 +158,45 @@ function GameWindow() {
             .catch(() => setHighlightedSquares([]))
     }
 
+    // Shared by click-to-move and drag-to-move. Drag bypasses the selection
+    // state machine entirely, so it re-checks the same turn/ownership rule
+    // that click's "canSelect" already gates on -- otherwise dragging the
+    // opponent's piece would optimistically move it before the backend
+    // rejects it.
+    const attemptMove = (origin: number, destination: number) => {
+        if (!game || !gameId || origin === destination) {
+            return
+        }
+
+        const canMove =
+            pieceColorOf(game.squares[origin]) === game.userColor && game.sideToMove === game.userColor
+        if (!canMove) {
+            return
+        }
+
+        const promotion = promotionFor(game.squares[origin], destination)
+        const previousGame = game
+
+        deselect()
+        setError(null)
+        setGame(applyMoveLocally(game, origin, destination))
+
+        makeMove(gameId, {
+            origin: squareIndexToAlgebraic(origin),
+            destination: squareIndexToAlgebraic(destination),
+            promotion,
+        })
+            .then((data) => {
+                setGame(data)
+                setViewIndex(data.moveHistory.length - 1)
+            })
+            .catch((err: Error) => {
+                setError(err.message)
+                setGame(previousGame)
+                setViewIndex(previousGame.moveHistory.length - 1)
+            })
+    }
+
     const handleSquareClick = (index: number) => {
         if (!game || !gameId || !isLive || game.status !== 'IN_PROGRESS') {
             return
@@ -167,28 +216,7 @@ function GameWindow() {
             return
         }
 
-        const origin = selectedSquare
-        const promotion = promotionFor(game.squares[origin], index)
-        const previousGame = game
-
-        deselect()
-        setError(null)
-        setGame(applyMoveLocally(game, origin, index))
-
-        makeMove(gameId, {
-            origin: squareIndexToAlgebraic(origin),
-            destination: squareIndexToAlgebraic(index),
-            promotion,
-        })
-            .then((data) => {
-                setGame(data)
-                setViewIndex(data.moveHistory.length - 1)
-            })
-            .catch((err: Error) => {
-                setError(err.message)
-                setGame(previousGame)
-                setViewIndex(previousGame.moveHistory.length - 1)
-            })
+        attemptMove(selectedSquare, index)
     }
 
     const handleUndo = () => {
@@ -230,6 +258,7 @@ function GameWindow() {
                             highlightedSquares={isLive ? highlightedSquares : []}
                             perspective={game.userColor === 'BLACK' ? 'black' : 'white'}
                             onSquareClick={handleSquareClick}
+                            onPieceDrop={isLive && game.status === 'IN_PROGRESS' ? attemptMove : undefined}
                         />
 
                         <div className={styles.panel}>
@@ -239,7 +268,6 @@ function GameWindow() {
                             <span className={styles.label}>Turn</span>
                             <p className={styles.value}>{game.sideToMove === 'WHITE' ? 'White' : 'Black'}</p>
 
-                            {statusMessage(game) && <p className={styles.status}>{statusMessage(game)}</p>}
                             {error && <p className={styles.error}>{error}</p>}
 
                             <span className={styles.label}>Moves</span>
@@ -287,7 +315,8 @@ function GameWindow() {
                             <button
                                 type="button"
                                 className={styles.surrenderButton}
-                                onClick={() => setShowSurrenderModal(true)}
+                                onClick={() => setSurrendered(true)}
+                                disabled={game.status !== 'IN_PROGRESS'}
                             >
                                 Surrender
                             </button>
@@ -298,12 +327,21 @@ function GameWindow() {
                 {!loading && !game && error && <p className={styles.error}>{error}</p>}
             </div>
 
-            <Modal open={showSurrenderModal}>
-                <p className={styles.status}>Bot wins</p>
-                <button type="button" className={setupStyles.playButton} onClick={() => navigate('/')}>
-                    Return
-                </button>
-            </Modal>
+            {game && (
+                <Modal open={surrendered || game.status !== 'IN_PROGRESS'}>
+                    <p className={styles.endGameTitle}>{endGameHeadline(game, surrendered)}</p>
+                    {!surrendered && game.status === 'DRAWN' && (
+                        <p className={styles.endGameSubtitle}>{drawReasonMessage(game)}</p>
+                    )}
+                    <button
+                        type="button"
+                        className={`${setupStyles.playButton} ${styles.returnButton}`}
+                        onClick={() => navigate('/')}
+                    >
+                        Return
+                    </button>
+                </Modal>
+            )}
         </div>
     )
 }

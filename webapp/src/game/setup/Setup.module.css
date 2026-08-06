@@ -67,11 +67,13 @@
 
 .colorTiles {
     display: flex;
+    justify-content: center;
     gap: var(--space-3);
 }
 
 .colorTile {
     flex: 1;
+    max-width: 88px;
     aspect-ratio: 1 / 1;
     display: flex;
     align-items: center;

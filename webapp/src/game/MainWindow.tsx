@@ -28,6 +28,20 @@ function MainWindow() {
     const [isStarting, setIsStarting] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
+    const movePiece = (origin: number, destination: number) => {
+        if (origin === destination) {
+            return
+        }
+
+        setSquares((current) => {
+            const next = [...current]
+            next[destination] = next[origin]
+            next[origin] = 0
+            return next
+        })
+        setSelectedSquare(null)
+    }
+
     const handleSquareClick = (index: number) => {
         if (selectedSquare === null) {
             if (squares[index] !== 0) {
@@ -41,13 +55,7 @@ function MainWindow() {
             return
         }
 
-        setSquares((current) => {
-            const next = [...current]
-            next[index] = next[selectedSquare]
-            next[selectedSquare] = 0
-            return next
-        })
-        setSelectedSquare(null)
+        movePiece(selectedSquare, index)
     }
 
     const handlePlay = () => {
@@ -71,6 +79,7 @@ function MainWindow() {
                     squares={squares}
                     selectedSquare={selectedSquare}
                     onSquareClick={handleSquareClick}
+                    onPieceDrop={movePiece}
                 />
 
                 <div className={styles.panel}>
