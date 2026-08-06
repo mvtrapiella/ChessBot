@@ -1,0 +1,43 @@
+.board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: min(70vh, 560px);
+    aspect-ratio: 1 / 1;
+    border: 2px solid #2b2b2b;
+}
+
+.cell {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.cell-light {
+    background-color: #f0d9b5;
+}
+
+.cell-dark {
+    background-color: #b58863;
+}
+
+.cell-selected {
+    outline: 3px solid #f7ec5b;
+    outline-offset: -3px;
+}
+
+.cell-piece {
+    width: 80%;
+    height: 80%;
+    pointer-events: none;
+}
+
+.cell-highlight {
+    position: absolute;
+    width: 30%;
+    height: 30%;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.25);
+}
