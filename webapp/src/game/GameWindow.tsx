@@ -1,10 +1,21 @@
 import { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import Modal from '../components/Modal'
 import Board from './board/Board'
+import { INITIAL_SQUARES } from './board/initialPosition'
 import { squareIndexToAlgebraic } from './board/notation'
-import { getGame, getLegalMoves, makeMove, type ColorDTO, type GameStateDTO } from '../api/gameApi'
+import MoveHistory from './MoveHistory'
+import {
+    getGame,
+    getLegalMoves,
+    makeMove,
+    undoMove,
+    type ColorDTO,
+    type GameStateDTO,
+} from '../api/gameApi'
 import pageStyles from '../components/PageLayout.module.css'
+import setupStyles from './setup/Setup.module.css'
 import styles from './GameWindow.module.css'
 
 // Matches board_backend's piece codes (types.rs): 1-6 = white, 7-12 = black
@@ -76,11 +87,14 @@ function statusMessage(game: GameStateDTO): string | null {
 
 function GameWindow() {
     const { gameId } = useParams<{ gameId: string }>()
+    const navigate = useNavigate()
     const [game, setGame] = useState<GameStateDTO | null>(null)
+    const [viewIndex, setViewIndex] = useState(-1)
     const [selectedSquare, setSelectedSquare] = useState<number | null>(null)
     const [highlightedSquares, setHighlightedSquares] = useState<number[]>([])
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
+    const [showSurrenderModal, setShowSurrenderModal] = useState(false)
 
     useEffect(() => {
         if (!gameId) return
@@ -90,7 +104,9 @@ function GameWindow() {
 
         getGame(gameId)
             .then((data) => {
-                if (!cancelled) setGame(data)
+                if (cancelled) return
+                setGame(data)
+                setViewIndex(data.moveHistory.length - 1)
             })
             .catch((err: Error) => {
                 if (!cancelled) setError(err.message)
@@ -104,6 +120,24 @@ function GameWindow() {
         }
     }, [gameId])
 
+    const isLive = game !== null && viewIndex === game.moveHistory.length - 1
+    const displaySquares =
+        !game || isLive
+            ? (game?.squares ?? INITIAL_SQUARES)
+            : viewIndex === -1
+              ? INITIAL_SQUARES
+              : game.moveHistory[viewIndex].squares
+
+    const deselect = () => {
+        setSelectedSquare(null)
+        setHighlightedSquares([])
+    }
+
+    const jumpTo = (index: number) => {
+        deselect()
+        setViewIndex(index)
+    }
+
     const selectSquare = (index: number) => {
         if (!gameId) return
 
@@ -114,13 +148,8 @@ function GameWindow() {
             .catch(() => setHighlightedSquares([]))
     }
 
-    const deselect = () => {
-        setSelectedSquare(null)
-        setHighlightedSquares([])
-    }
-
     const handleSquareClick = (index: number) => {
-        if (!game || !gameId || game.status !== 'IN_PROGRESS') {
+        if (!game || !gameId || !isLive || game.status !== 'IN_PROGRESS') {
             return
         }
 
@@ -151,12 +180,31 @@ function GameWindow() {
             destination: squareIndexToAlgebraic(index),
             promotion,
         })
-            .then(setGame)
+            .then((data) => {
+                setGame(data)
+                setViewIndex(data.moveHistory.length - 1)
+            })
             .catch((err: Error) => {
                 setError(err.message)
                 setGame(previousGame)
+                setViewIndex(previousGame.moveHistory.length - 1)
             })
     }
+
+    const handleUndo = () => {
+        if (!gameId) return
+
+        setError(null)
+        undoMove(gameId)
+            .then((data) => {
+                deselect()
+                setGame(data)
+                setViewIndex(data.moveHistory.length - 1)
+            })
+            .catch((err: Error) => setError(err.message))
+    }
+
+    const canUndo = game !== null && game.moveHistory.length >= 2
 
     if (!gameId) {
         return (
@@ -177,9 +225,9 @@ function GameWindow() {
                 {!loading && game && (
                     <>
                         <Board
-                            squares={game.squares}
-                            selectedSquare={selectedSquare}
-                            highlightedSquares={highlightedSquares}
+                            squares={displaySquares}
+                            selectedSquare={isLive ? selectedSquare : null}
+                            highlightedSquares={isLive ? highlightedSquares : []}
                             perspective={game.userColor === 'BLACK' ? 'black' : 'white'}
                             onSquareClick={handleSquareClick}
                         />
@@ -193,12 +241,69 @@ function GameWindow() {
 
                             {statusMessage(game) && <p className={styles.status}>{statusMessage(game)}</p>}
                             {error && <p className={styles.error}>{error}</p>}
+
+                            <span className={styles.label}>Moves</span>
+                            <MoveHistory moveHistory={game.moveHistory} viewIndex={viewIndex} onSelectIndex={jumpTo} />
+
+                            <div className={styles.rewindRow}>
+                                <button
+                                    type="button"
+                                    className={styles.rewindButton}
+                                    onClick={() => jumpTo(-1)}
+                                    disabled={viewIndex === -1}
+                                    aria-label="Rewind to the first move"
+                                >
+                                    |&lt;
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.rewindButton}
+                                    onClick={() => jumpTo(Math.max(-1, viewIndex - 1))}
+                                    disabled={viewIndex === -1}
+                                    aria-label="Step back one move"
+                                >
+                                    &lt;
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.rewindButton}
+                                    onClick={() => jumpTo(Math.min(game.moveHistory.length - 1, viewIndex + 1))}
+                                    disabled={isLive}
+                                    aria-label="Step forward one move"
+                                >
+                                    &gt;
+                                </button>
+                            </div>
+
+                            <button
+                                type="button"
+                                className={styles.undoButton}
+                                onClick={handleUndo}
+                                disabled={!canUndo}
+                            >
+                                Undo last turn
+                            </button>
+
+                            <button
+                                type="button"
+                                className={styles.surrenderButton}
+                                onClick={() => setShowSurrenderModal(true)}
+                            >
+                                Surrender
+                            </button>
                         </div>
                     </>
                 )}
 
                 {!loading && !game && error && <p className={styles.error}>{error}</p>}
             </div>
+
+            <Modal open={showSurrenderModal}>
+                <p className={styles.status}>Bot wins</p>
+                <button type="button" className={setupStyles.playButton} onClick={() => navigate('/')}>
+                    Return
+                </button>
+            </Modal>
         </div>
     )
 }

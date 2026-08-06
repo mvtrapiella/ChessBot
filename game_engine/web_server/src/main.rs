@@ -7,12 +7,13 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 
-use crate::handlers::{create_game, get_game, legal_moves, make_move};
+use crate::handlers::{create_game, get_game, legal_moves, make_move, undo_move};
 use crate::state::AppState;
 
 mod dto;
 mod error;
 mod handlers;
+mod notation;
 mod state;
 
 #[tokio::main]
@@ -35,6 +36,7 @@ async fn main() {
         .route("/games/{id}", get(get_game))
         .route("/games/{id}/legal-moves/{square}", get(legal_moves))
         .route("/games/{id}/move", post(make_move))
+        .route("/games/{id}/undo", post(undo_move))
         .with_state(state)
         .layer(cors);
 

@@ -47,6 +47,72 @@
     color: var(--color-ash);
 }
 
+.rewindRow {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.rewindButton {
+    flex: 1;
+    padding: var(--space-2) 0;
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--color-ivory);
+    background: transparent;
+    border: 1px solid var(--color-panel-line);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.rewindButton:not(:disabled):hover {
+    border-color: var(--color-brass);
+    color: var(--color-brass);
+}
+
+.rewindButton:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.undoButton {
+    padding: var(--space-3) 0;
+    font-family: var(--font-body);
+    font-weight: 700;
+    color: var(--color-ivory);
+    background: transparent;
+    border: 1px solid var(--color-panel-line);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.undoButton:not(:disabled):hover {
+    border-color: var(--color-brass);
+    color: var(--color-brass);
+}
+
+.undoButton:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.surrenderButton {
+    padding: var(--space-3) 0;
+    font-family: var(--font-body);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #d97c5c;
+    background: transparent;
+    border: 1px solid #d97c5c;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.surrenderButton:hover {
+    color: var(--color-ink);
+    background: #d97c5c;
+}
+
 @media (max-width: 720px) {
     .panel {
         max-width: var(--board-size);

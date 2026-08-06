@@ -7,6 +7,13 @@ export type DrawReasonDTO =
     | 'INSUFFICIENT_MATERIAL'
     | 'THREEFOLD_REPETITION'
 
+export type MoveRecordDTO = {
+    ply: number
+    color: ColorDTO
+    notation: string
+    squares: number[]
+}
+
 export type GameStateDTO = {
     gameId: string
     squares: number[]
@@ -14,6 +21,7 @@ export type GameStateDTO = {
     userColor: ColorDTO
     status: GameStatusDTO
     drawReason: DrawReasonDTO | null
+    moveHistory: MoveRecordDTO[]
 }
 
 export type MoveRequest = {
@@ -62,4 +70,10 @@ export function makeMove(gameId: string, move: MoveRequest): Promise<GameStateDT
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(move),
     }).then((response) => parseResponse<GameStateDTO>(response))
+}
+
+export function undoMove(gameId: string): Promise<GameStateDTO> {
+    return fetch(`${API_BASE_URL}/games/${gameId}/undo`, { method: 'POST' }).then((response) =>
+        parseResponse<GameStateDTO>(response),
+    )
 }

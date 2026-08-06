@@ -230,6 +230,13 @@ impl Position{
         Some(Move { origin, destination, promotion })
     }
 
+    // Inverse of square_from_str: a square index into its 2-character algebraic form ("e2").
+    pub fn square_to_str(square: u8) -> String {
+        let file = (b'a' + (square % 8)) as char;
+        let rank = (square / 8) + 1;
+        format!("{}{}", file, rank)
+    }
+
     // Parses a 2-character algebraic square ("e2") into a square index. Public so
     // callers outside this crate (e.g. the web server) don't need to duplicate this.
     pub fn square_from_str(square: &str) -> Option<u8> {

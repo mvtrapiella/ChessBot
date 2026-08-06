@@ -1,0 +1,52 @@
+.list {
+    display: flex;
+    flex-direction: column;
+    max-height: 220px;
+    overflow-y: auto;
+    border: 1px solid var(--color-panel-line);
+    border-radius: 6px;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 32px 1fr 1fr;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-2);
+}
+
+.row:nth-child(odd) {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.moveNumber {
+    font-family: var(--font-mono);
+    color: var(--color-ash);
+}
+
+.ply {
+    padding: 2px var(--space-2);
+    font-family: var(--font-mono);
+    text-align: left;
+    color: var(--color-ivory);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.ply:hover {
+    background: var(--color-panel-line);
+}
+
+.plyActive {
+    color: var(--color-ink);
+    background: var(--color-brass);
+}
+
+.empty {
+    margin: 0;
+    padding: var(--space-2);
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--color-ash);
+}
