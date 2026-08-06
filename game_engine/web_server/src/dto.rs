@@ -108,3 +108,10 @@ impl GameStateDTO {
         }
     }
 }
+
+// Legal destination squares for a piece, so the frontend can highlight them
+// without duplicating the engine's move generation client-side.
+#[derive(Debug, Serialize)]
+pub struct LegalMovesDTO {
+    pub destinations: Vec<u8>,
+}

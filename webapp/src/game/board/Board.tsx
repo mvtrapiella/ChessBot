@@ -2,10 +2,13 @@ import { useRef, useState, type MouseEvent } from 'react'
 import Cell from './Cell'
 import styles from './Board.module.css'
 
+export type Perspective = 'white' | 'black'
+
 type BoardProps = {
     squares: number[]
     selectedSquare: number | null
     highlightedSquares?: number[]
+    perspective?: Perspective
     onSquareClick: (index: number) => void
 }
 
@@ -14,26 +17,35 @@ type Arrow = {
     to: number
 }
 
-// Cell 0 in the visual grid (top-left) is a8; backend square indices run
-// a1=0 .. h8=63 (index = rank*8 + file). This converts one to the other.
-function gridPositionToSquareIndex(position: number): number {
+// Cell 0 in the visual grid (top-left) is a8 when viewed as White (h1 when
+// viewed as Black); backend square indices run a1=0 .. h8=63
+// (index = rank*8 + file). This converts one to the other.
+function gridPositionToSquareIndex(position: number, perspective: Perspective): number {
     const row = Math.floor(position / 8)
     const col = position % 8
-    const rank = 7 - row
-    return rank * 8 + col
+    const rank = perspective === 'white' ? 7 - row : row
+    const file = perspective === 'white' ? col : 7 - col
+    return rank * 8 + file
 }
 
 // Center of a square in the SVG overlay's 8x8 coordinate space.
-function squareIndexToCenter(squareIndex: number) {
+function squareIndexToCenter(squareIndex: number, perspective: Perspective) {
     const rank = Math.floor(squareIndex / 8)
     const file = squareIndex % 8
-    const row = 7 - rank
-    return { x: file + 0.5, y: row + 0.5 }
+    const row = perspective === 'white' ? 7 - rank : rank
+    const col = perspective === 'white' ? file : 7 - file
+    return { x: col + 0.5, y: row + 0.5 }
 }
 
 const RIGHT_BUTTON = 2
 
-function Board({ squares, selectedSquare, highlightedSquares = [], onSquareClick }: Readonly<BoardProps>) {
+function Board({
+    squares,
+    selectedSquare,
+    highlightedSquares = [],
+    perspective = 'white',
+    onSquareClick,
+}: Readonly<BoardProps>) {
     const [markedSquares, setMarkedSquares] = useState<Set<number>>(new Set())
     const [arrows, setArrows] = useState<Arrow[]>([])
     const rightDragOrigin = useRef<number | null>(null)
@@ -82,7 +94,7 @@ function Board({ squares, selectedSquare, highlightedSquares = [], onSquareClick
     return (
         <div className={styles.board} onContextMenu={(event) => event.preventDefault()}>
             {gridPositions.map((position) => {
-                const squareIndex = gridPositionToSquareIndex(position)
+                const squareIndex = gridPositionToSquareIndex(position, perspective)
                 const row = Math.floor(squareIndex / 8)
                 const col = squareIndex % 8
                 const isLight = (row + col) % 2 === 1
@@ -118,8 +130,8 @@ function Board({ squares, selectedSquare, highlightedSquares = [], onSquareClick
                     </marker>
                 </defs>
                 {arrows.map((arrow, index) => {
-                    const from = squareIndexToCenter(arrow.from)
-                    const to = squareIndexToCenter(arrow.to)
+                    const from = squareIndexToCenter(arrow.from, perspective)
+                    const to = squareIndexToCenter(arrow.to, perspective)
                     return (
                         <line
                             key={index}

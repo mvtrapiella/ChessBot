@@ -10,7 +10,7 @@ use board_backend::board::{position::GameStatus::InProgress, state::Board, types
 use board_backend::board::types::{Color, NO_SQUARE};
 use board_backend::board::position::Position;
 
-use crate::dto::{CreateGameRequest, GameStateDTO, MoveRequest};
+use crate::dto::{CreateGameRequest, GameStateDTO, LegalMovesDTO, MoveRequest};
 use crate::error::ApiError;
 use crate::state::{AppState, Game};
 
@@ -38,15 +38,25 @@ pub async fn create_game(
     board.initialize_board();
     board.update_bitboards();
 
-    let position = Position {
+    let mut position = Position {
         board,
         history: Vec::new(),
         transposition_table: HashMap::new(),
         position_history: Vec::new(),
     };
+    position.position_history.push(position.board.zobrian_hash);
 
     let game_id = Uuid::new_v4();
     let user_color: Color = payload.user_color.into();
+
+    if position.board.side_to_move != user_color {
+        let opening_move = position
+            .find_best_move(payload.depth)
+            .expect("The game has not ended so the bot should make a move");
+        position.make_move(opening_move);
+        position.position_history.push(position.board.zobrian_hash);
+    }
+
     let response = GameStateDTO::from_position(game_id, &position, user_color);
 
     let game = Game {
@@ -70,6 +80,30 @@ pub async fn get_game(
     let game = games.get(&game_id).ok_or(ApiError::NotFound)?;
 
     Ok(Json(GameStateDTO::from_position(game_id, &game.position, game.user_color)))
+}
+
+pub async fn legal_moves(
+    State(state): State<AppState>,
+    Path((game_id, square)): Path<(Uuid, String)>,
+) -> Result<Json<LegalMovesDTO>, ApiError> {
+    let games = state.games();
+    let games = games.lock().unwrap();
+
+    let game = games.get(&game_id).ok_or(ApiError::NotFound)?;
+
+    let origin = Position::square_from_str(&square)
+        .ok_or_else(|| ApiError::BadRequest(format!("Invalid square: {}", square)))?;
+
+    let destinations = game
+        .position
+        .board
+        .all_legal_moves()
+        .into_iter()
+        .filter(|mv| mv.origin == origin)
+        .map(|mv| mv.destination)
+        .collect();
+
+    Ok(Json(LegalMovesDTO { destinations }))
 }
 
 pub async fn make_move(

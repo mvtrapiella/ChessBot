@@ -117,10 +117,15 @@
     transition: filter 0.15s ease, transform 0.05s ease;
 }
 
-.playButton:hover {
+.playButton:hover:not(:disabled) {
     filter: brightness(1.08);
 }
 
-.playButton:active {
+.playButton:active:not(:disabled) {
     transform: translateY(1px);
+}
+
+.playButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }

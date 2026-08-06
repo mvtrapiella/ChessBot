@@ -7,7 +7,7 @@ use axum::{
 };
 use tower_http::cors::CorsLayer;
 
-use crate::handlers::{create_game, get_game, make_move};
+use crate::handlers::{create_game, get_game, legal_moves, make_move};
 use crate::state::AppState;
 
 mod dto;
@@ -33,6 +33,7 @@ async fn main() {
     let app = Router::new()
         .route("/games", post(create_game))
         .route("/games/{id}", get(get_game))
+        .route("/games/{id}/legal-moves/{square}", get(legal_moves))
         .route("/games/{id}/move", post(make_move))
         .with_state(state)
         .layer(cors);

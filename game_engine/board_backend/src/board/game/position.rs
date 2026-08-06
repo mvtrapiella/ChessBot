@@ -230,6 +230,20 @@ impl Position{
         Some(Move { origin, destination, promotion })
     }
 
+    // Parses a 2-character algebraic square ("e2") into a square index. Public so
+    // callers outside this crate (e.g. the web server) don't need to duplicate this.
+    pub fn square_from_str(square: &str) -> Option<u8> {
+        let mut chars = square.chars();
+        let file = chars.next()?;
+        let rank = chars.next()?;
+
+        if chars.next().is_some() {
+            return None;
+        }
+
+        Self::square_from_chars(file, rank)
+    }
+
     fn square_from_chars(file: char, rank: char) -> Option<u8> {
         let file = file.to_ascii_lowercase() as i8 - 'a' as i8;
         let rank = rank as i8 - '1' as i8;
