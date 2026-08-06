@@ -59,3 +59,10 @@
     height: 100%;
     pointer-events: none;
 }
+
+.draggedPiece {
+    position: fixed;
+    pointer-events: none;
+    z-index: 50;
+    filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.55));
+}

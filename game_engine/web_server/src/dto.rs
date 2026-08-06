@@ -4,6 +4,8 @@ use uuid::Uuid;
 use board_backend::board::position::{DrawReason, GameStatus, Position};
 use board_backend::board::types::Color;
 
+use crate::state::MoveRecord;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum ColorDTO {
@@ -71,6 +73,26 @@ pub struct MoveRequest {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
+pub struct MoveRecordDTO {
+    pub ply: u32,
+    pub color: ColorDTO,
+    pub notation: String,
+    pub squares: Vec<u8>,
+}
+
+impl From<&MoveRecord> for MoveRecordDTO {
+    fn from(record: &MoveRecord) -> Self {
+        MoveRecordDTO {
+            ply: record.ply,
+            color: record.color.into(),
+            notation: record.notation.clone(),
+            squares: record.squares.clone(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GameStateDTO {
     pub game_id: Uuid,
     pub squares: Vec<u8>,
@@ -78,11 +100,17 @@ pub struct GameStateDTO {
     pub user_color: ColorDTO,
     pub status: GameStatusDTO,
     pub draw_reason: Option<DrawReasonDTO>,
+    pub move_history: Vec<MoveRecordDTO>,
 }
 
 impl GameStateDTO {
     // Check the actual position state and returns a GameStateDTO with the actual game state
-    pub fn from_position(game_id: Uuid, position: &Position, user_color: Color) -> Self {
+    pub fn from_position(
+        game_id: Uuid,
+        position: &Position,
+        user_color: Color,
+        move_history: &[MoveRecord],
+    ) -> Self {
         let (status, draw_reason) = match position.game_status() {
             GameStatus::InProgress => (GameStatusDTO::InProgress, None),
             GameStatus::WhiteWon => (GameStatusDTO::WhiteWon, None),
@@ -105,6 +133,14 @@ impl GameStateDTO {
             user_color: user_color.into(),
             status,
             draw_reason,
+            move_history: move_history.iter().map(MoveRecordDTO::from).collect(),
         }
     }
+}
+
+// Legal destination squares for a piece, so the frontend can highlight them
+// without duplicating the engine's move generation client-side.
+#[derive(Debug, Serialize)]
+pub struct LegalMovesDTO {
+    pub destinations: Vec<u8>,
 }

@@ -1,0 +1,141 @@
+.panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    width: 100%;
+    max-width: 320px;
+    max-height: calc(100svh - 220px);
+    overflow-y: auto;
+    padding: var(--space-6);
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-line);
+    border-radius: 8px;
+    box-shadow: 0 24px 48px -32px rgba(0, 0, 0, 0.7);
+}
+
+.label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-ash);
+}
+
+.value {
+    margin: 0 0 var(--space-3);
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    color: var(--color-ivory);
+}
+
+.endGameTitle {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 2rem;
+    letter-spacing: 0.02em;
+    color: var(--color-ivory);
+}
+
+.endGameSubtitle {
+    margin: calc(-1 * var(--space-2)) 0 0;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ash);
+}
+
+.error {
+    margin: var(--space-2) 0 0;
+    color: #d97c5c;
+    font-size: 0.9rem;
+}
+
+.message {
+    font-family: var(--font-mono);
+    color: var(--color-ash);
+}
+
+.rewindRow {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.rewindButton {
+    flex: 1;
+    padding: var(--space-2) 0;
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--color-ivory);
+    background: transparent;
+    border: 1px solid var(--color-panel-line);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.rewindButton:not(:disabled):hover {
+    border-color: var(--color-brass);
+    color: var(--color-brass);
+}
+
+.rewindButton:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.undoButton {
+    padding: var(--space-3) 0;
+    font-family: var(--font-body);
+    font-weight: 700;
+    color: var(--color-ivory);
+    background: transparent;
+    border: 1px solid var(--color-panel-line);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.undoButton:not(:disabled):hover {
+    border-color: var(--color-brass);
+    color: var(--color-brass);
+}
+
+.undoButton:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.surrenderButton {
+    padding: var(--space-3) 0;
+    font-family: var(--font-body);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #d97c5c;
+    background: transparent;
+    border: 1px solid #d97c5c;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.surrenderButton:hover:not(:disabled) {
+    color: var(--color-ink);
+    background: #d97c5c;
+}
+
+.surrenderButton:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.returnButton {
+    width: 100%;
+}
+
+@media (max-width: 720px) {
+    .panel {
+        max-width: var(--board-size);
+        max-height: calc(100svh - var(--board-size) - 160px);
+        padding: var(--space-4);
+    }
+}
