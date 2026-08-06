@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import Board from './board/Board'
 import { INITIAL_SQUARES } from './board/initialPosition'
+import DepthSelector from './setup/DepthSelector'
+import ColorSelector, { type PlayerColorChoice } from './setup/ColorSelector'
+import './MainWindow.css'
 
 // Temporary: free movement, no legality (this board isn't backed by a real
 // game yet). Real legal-move highlighting takes over once inside /game/:gameId.
 function MainWindow() {
     const [squares, setSquares] = useState<number[]>(INITIAL_SQUARES)
     const [selectedSquare, setSelectedSquare] = useState<number | null>(null)
+    const [depth, setDepth] = useState(3)
+    const [colorChoice, setColorChoice] = useState<PlayerColorChoice>('white')
 
     const handleSquareClick = (index: number) => {
         if (selectedSquare === null) {
@@ -30,12 +35,27 @@ function MainWindow() {
         setSelectedSquare(null)
     }
 
+    const handlePlay = () => {
+        // TODO: POST /games with { userColor: resolve(colorChoice), depth }, then navigate to /game/:gameId
+        console.log('Play requested', { depth, colorChoice })
+    }
+
     return (
-        <Board
-            squares={squares}
-            selectedSquare={selectedSquare}
-            onSquareClick={handleSquareClick}
-        />
+        <div className="main-window">
+            <Board
+                squares={squares}
+                selectedSquare={selectedSquare}
+                onSquareClick={handleSquareClick}
+            />
+
+            <div className="setup-panel">
+                <DepthSelector depth={depth} onChange={setDepth} />
+                <ColorSelector selected={colorChoice} onChange={setColorChoice} />
+                <button type="button" className="play-button" onClick={handlePlay}>
+                    Play
+                </button>
+            </div>
+        </div>
     )
 }
 
