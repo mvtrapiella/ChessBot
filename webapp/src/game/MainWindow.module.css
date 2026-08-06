@@ -8,6 +8,8 @@
     align-items: flex-start;
     flex-wrap: wrap;
     gap: var(--space-7);
+    max-width: 960px;
+    margin-inline: auto;
 }
 
 .panel {
@@ -30,6 +32,8 @@
     }
 
     .panel {
-        max-width: min(92vw, 560px);
+        max-width: var(--board-size);
+        padding: var(--space-4);
+        gap: var(--space-4);
     }
 }

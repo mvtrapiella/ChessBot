@@ -27,6 +27,12 @@
     --space-7: 48px;
     --space-8: 64px;
 
+    /* Single source of truth for board size -- the setup panel matches this
+       when stacked on narrow screens, so they never size independently.
+       100% (not vw) so it respects .page's own padding instead of the raw
+       viewport width, which would let the board overflow past that padding. */
+    --board-size: min(100%, 68vh, 560px);
+
     color: var(--color-ivory);
     background: var(--color-ink);
     font: 16px/1.5 var(--font-body);
