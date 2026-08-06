@@ -11,6 +11,7 @@ import wN from '../../assets/wN.svg'
 import wP from '../../assets/wP.svg'
 import wQ from '../../assets/wQ.svg'
 import wR from '../../assets/wR.svg'
+import styles from './Board.module.css'
 
 // Matches board_backend's piece codes (types.rs): 0 = empty, 1-6 = white, 7-12 = black
 const PIECE_ASSETS: Record<number, string> = {
@@ -29,14 +30,14 @@ type CellProps = {
     onMouseUp: (event: MouseEvent) => void
 }
 
-function Cell({ piece, isLight, isSelected, isHighlighted, isMarked, onClick, onMouseDown, onMouseUp }: CellProps) {
+function Cell({ piece, isLight, isSelected, isHighlighted, isMarked, onClick, onMouseDown, onMouseUp }: Readonly<CellProps>) {
     const asset = PIECE_ASSETS[piece]
 
     const className = [
-        'cell',
-        isLight ? 'cell-light' : 'cell-dark',
-        isSelected ? 'cell-selected' : '',
-        isMarked ? 'cell-marked' : '',
+        styles.cell,
+        isLight ? styles.cellLight : styles.cellDark,
+        isSelected ? styles.cellSelected : '',
+        isMarked ? styles.cellMarked : '',
     ].filter(Boolean).join(' ')
 
     return (
@@ -47,8 +48,8 @@ function Cell({ piece, isLight, isSelected, isHighlighted, isMarked, onClick, on
             onMouseUp={onMouseUp}
             onDragStart={(event) => event.preventDefault()}
         >
-            {isHighlighted && <div className="cell-highlight" />}
-            {asset && <img src={asset} alt="" className="cell-piece" draggable={false} />}
+            {isHighlighted && <div className={styles.cellHighlight} />}
+            {asset && <img src={asset} alt="" className={styles.cellPiece} draggable={false} />}
         </div>
     )
 }

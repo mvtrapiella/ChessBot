@@ -1,6 +1,6 @@
 import wK from '../../assets/wK.svg'
 import bK from '../../assets/bK.svg'
-import './Setup.css'
+import styles from './Setup.module.css'
 
 export type PlayerColorChoice = 'white' | 'random' | 'black'
 
@@ -9,15 +9,17 @@ type ColorSelectorProps = {
     onChange: (choice: PlayerColorChoice) => void
 }
 
-function tileClassName(isActive: boolean, extra = ''): string {
-    return ['color-tile', extra, isActive ? 'color-tile-active' : ''].filter(Boolean).join(' ')
+function tileClassName(isActive: boolean, extra?: string): string {
+    return [styles.colorTile, extra, isActive ? styles.colorTileActive : '']
+        .filter(Boolean)
+        .join(' ')
 }
 
 function ColorSelector({ selected, onChange }: Readonly<ColorSelectorProps>) {
     return (
-        <div className="setup-section">
-            <span className="setup-label">Color</span>
-            <div className="color-tiles">
+        <div className={styles.section}>
+            <span className={styles.label}>Color</span>
+            <div className={styles.colorTiles}>
                 <button
                     type="button"
                     className={tileClassName(selected === 'white')}
@@ -28,7 +30,7 @@ function ColorSelector({ selected, onChange }: Readonly<ColorSelectorProps>) {
                 </button>
                 <button
                     type="button"
-                    className={tileClassName(selected === 'random', 'color-tile-random')}
+                    className={tileClassName(selected === 'random', styles.colorTileRandom)}
                     onClick={() => onChange('random')}
                     aria-label="Play as a random color"
                 />

@@ -1,6 +1,6 @@
 import { useRef, useState, type MouseEvent } from 'react'
 import Cell from './Cell'
-import './Board.css'
+import styles from './Board.module.css'
 
 type BoardProps = {
     squares: number[]
@@ -80,7 +80,7 @@ function Board({ squares, selectedSquare, highlightedSquares = [], onSquareClick
     const gridPositions = Array.from({ length: 64 }, (_, position) => position)
 
     return (
-        <div className="board" onContextMenu={(event) => event.preventDefault()}>
+        <div className={styles.board} onContextMenu={(event) => event.preventDefault()}>
             {gridPositions.map((position) => {
                 const squareIndex = gridPositionToSquareIndex(position)
                 const row = Math.floor(squareIndex / 8)
@@ -102,7 +102,7 @@ function Board({ squares, selectedSquare, highlightedSquares = [], onSquareClick
                 )
             })}
 
-            <svg className="board-arrows" viewBox="0 0 8 8">
+            <svg className={styles.arrows} viewBox="0 0 8 8">
                 <defs>
                     <marker
                         id="arrowhead"

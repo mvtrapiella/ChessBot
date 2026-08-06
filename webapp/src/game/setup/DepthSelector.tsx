@@ -1,4 +1,4 @@
-import './Setup.css'
+import styles from './Setup.module.css'
 
 const MIN_DEPTH = 1
 const MAX_DEPTH = 6
@@ -14,19 +14,20 @@ function clamp(value: number): number {
 
 function DepthSelector({ depth, onChange }: Readonly<DepthSelectorProps>) {
     return (
-        <div className="setup-section">
-            <span className="setup-label">Depth</span>
-            <div className="depth-spinner">
+        <div className={styles.section}>
+            <span className={styles.label}>Depth</span>
+            <div className={styles.depthSpinner}>
                 <button
                     type="button"
-                    className="depth-spinner-button"
+                    className={styles.depthSpinnerButton}
                     onClick={() => onChange(clamp(depth - 1))}
                     disabled={depth <= MIN_DEPTH}
+                    aria-label="Decrease depth"
                 >
                     −
                 </button>
                 <input
-                    className="depth-spinner-input"
+                    className={styles.depthSpinnerInput}
                     type="number"
                     min={MIN_DEPTH}
                     max={MAX_DEPTH}
@@ -35,9 +36,10 @@ function DepthSelector({ depth, onChange }: Readonly<DepthSelectorProps>) {
                 />
                 <button
                     type="button"
-                    className="depth-spinner-button"
+                    className={styles.depthSpinnerButton}
                     onClick={() => onChange(clamp(depth + 1))}
                     disabled={depth >= MAX_DEPTH}
+                    aria-label="Increase depth"
                 >
                     +
                 </button>
