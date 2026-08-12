@@ -2,6 +2,7 @@ use std::clone;
 
 use crate::board::Color::{Black, White};
 use crate::board::movegen::masks::bishop_masks::{BISHOP_ATTACKS_TABLE, BISHOP_MAGICS, BISHOP_MASKS, BISHOP_OFFSETS, BISHOP_SHIFTS};
+use crate::board::movegen::masks::rook_masks::{ROOK_ATTACKS_TABLE, ROOK_MAGICS, ROOK_MASKS, ROOK_OFFSETS, ROOK_SHIFTS};
 use crate::board::{Board, Color};
 use crate::board::types::{
     Move, WHITE_PAWN, WHITE_ROOK, WHITE_KNIGHT, WHITE_BISHOP, WHITE_QUEEN, WHITE_KING,
@@ -51,6 +52,25 @@ pub const BISHOP_PST: [i32; 64] = [
     -10,   0,   0,   0,   0,   0,   0, -10,
     // Row 8 (a8 - h8)
     -20, -10, -10, -10, -10, -10, -10, -20,
+];
+
+pub const ROOK_PST: [i32; 64] = [
+    // Rank 1 (a1 - h1) -> Starting position: prefers centralizing on d1/e1 (+5)
+     0,  0,  0,  5,  5,  0,  0,  0,
+    // Rank 2 (a2 - h2) -> Penalized edges (-5)
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    // Rank 3 (a3 - h3)
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    // Rank 4 (a4 - h4)
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    // Rank 5 (a5 - h5)
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    // Rank 6 (a6 - h6)
+    -5,  0,  0,  0,  0,  0,  0, -5,
+    // Rank 7 (a7 - h7) -> Major bonus for reaching the 7th rank (+10 on d7/e7)
+     5, 10, 10, 10, 10, 10, 10,  5,
+    // Rank 8 (a8 - h8) -> Control of the 8th rank
+     0,  0,  0,  0,  0,  0,  0,  0,
 ];
 
 // In order to nor have a table one for white and other for black pawns we do the XOR operation of the square by 56
@@ -139,6 +159,17 @@ pub const FILE_MASKS: [u64; 8] = [
     0x8080_8080_8080_8080, // Column H
 ];
 
+pub const RANK_MASKS: [u64; 8] = [
+    0x0000_0000_0000_00FF, // Rank 1 (a1 - h1)
+    0x0000_0000_0000_FF00, // Rank 2 (a2 - h2)
+    0x0000_0000_00FF_0000, // Rank 3 (a3 - h3)
+    0x0000_0000_FF00_0000, // Rank 4 (a4 - h4)
+    0x0000_00FF_0000_0000, // Rank 5 (a5 - h5)
+    0x0000_FF00_0000_0000, // Rank 6 (a6 - h6)
+    0x00FF_0000_0000_0000, // Rank 7 (a7 - h7)
+    0xFF00_0000_0000_0000, // Rank 8 (a8 - h8)
+];
+
 pub const PAWN_VALUE: i32 = 100;
 pub const KNIGHT_VALUE: i32 = 300;
 pub const BISHOP_VALUE: i32 = 300;
@@ -161,6 +192,9 @@ impl Board{
     fn material_value(&self, mut bitboard: u64, color: Color) -> i32 {
         // First calculate the bonus for the pair of bishops. If not score is 0
         let mut total = self.pair_of_bishops(color);
+
+        // Then check if the towers are connected
+        total += self.rooks_connected(color);
 
         while bitboard != 0 {
             let square = bitboard.trailing_zeros();
@@ -195,11 +229,146 @@ impl Board{
             WHITE_PAWN | BLACK_PAWN => PAWN_VALUE + self.pawn_value(piece, square),
             WHITE_KNIGHT | BLACK_KNIGHT => KNIGHT_VALUE + self.knight_value(square),
             WHITE_BISHOP | BLACK_BISHOP => BISHOP_VALUE + self.bishop_value(piece, square),
-            WHITE_ROOK | BLACK_ROOK => ROOK_VALUE,
+            WHITE_ROOK | BLACK_ROOK => ROOK_VALUE + self.trapped_rook_penalty(piece, square) + self.rook_value(piece, square),
             WHITE_QUEEN | BLACK_QUEEN => QUEEN_VALUE,
             WHITE_KING | BLACK_KING => KING_VALUE,
             _ => 0,
         }
+    }
+
+    // If the white bishop pair is conserved we give a bonus
+    fn rooks_connected(&self, color: Color) -> i32 {
+        let rooks = if color == White {
+            self.piece_bitboards[(WHITE_ROOK - 1) as usize]
+        } else {
+            self.piece_bitboards[(BLACK_ROOK - 1) as usize]
+        };
+
+        if rooks.count_ones() != 2 {
+            return 0;
+        }
+
+        let first_square = rooks.trailing_zeros() as u8;
+        let second_square = (rooks & (rooks - 1)).trailing_zeros() as u8;
+
+        if first_square / 8 == second_square / 8 {
+            20
+        } else {
+            0
+        }
+    }
+
+    fn trapped_rook_penalty(&self, piece: u8, square: u8) -> i32 {
+        let is_white = piece == WHITE_ROOK;
+
+        let king_bitboard = if is_white {
+            self.piece_bitboards[(WHITE_KING - 1) as usize]
+        } else {
+            self.piece_bitboards[(BLACK_KING - 1) as usize]
+        };
+        let king_square = king_bitboard.trailing_zeros() as u8;
+
+        let own_pawns = if is_white {
+            self.piece_bitboards[(WHITE_PAWN - 1) as usize]
+        } else {
+            self.piece_bitboards[(BLACK_PAWN - 1) as usize]
+        };
+
+        let (a1, b1, c1, f1, g1, h1, a2, b2, g2, h2) = if is_white {
+            (0, 1, 2, 5, 6, 7, 8, 9, 14, 15)
+        } else {
+            (56, 57, 58, 61, 62, 63, 48, 49, 54, 55)
+        };
+
+        // Trapped on h1/h8: king blocks the rank, h-pawn blocks the file.
+        if square == h1 && (king_square == g1 || king_square == f1) {
+            let h_pawn_home = own_pawns & (1u64 << h2) != 0;
+            let g_pawn_home = own_pawns & (1u64 << g2) != 0;
+            if h_pawn_home || g_pawn_home {
+                return -50;
+            }
+        }
+
+        // Trapped on a1/a8: king blocks the rank, a-pawn blocks the file.
+        if square == a1 && (king_square == b1 || king_square == c1) {
+            let a_pawn_home = own_pawns & (1u64 << a2) != 0;
+            let b_pawn_home = own_pawns & (1u64 << b2) != 0;
+            if a_pawn_home || b_pawn_home {
+                return -50;
+            }
+        }
+
+        0
+    }
+
+    fn rook_value(&self, piece: u8, square: u8) -> i32 {
+        let blockers = self.all_pieces & ROOK_MASKS[square as usize];
+        let magic = ROOK_MAGICS[square as usize];
+        let shift = ROOK_SHIFTS[square as usize];
+        let offset = ROOK_OFFSETS[square as usize];
+        
+        let hash = (blockers.wrapping_mul(magic) >> shift) as usize;
+
+        let mut valid_attacks = ROOK_ATTACKS_TABLE[hash + offset];
+
+        let index = if piece ==WHITE_ROOK {
+            square
+            
+        } else {
+            square^56
+        };
+
+        let mut bonus = ROOK_PST[index as usize];
+
+        let column = square % 8;
+        let rank = square / 8;
+
+        if piece == WHITE_ROOK {
+            // Semi-open file
+            if FILE_MASKS[column as usize] & self.piece_bitboards[(WHITE_PAWN - 1) as usize] == 0 {
+                // Open file
+                if FILE_MASKS[column as usize] & self.piece_bitboards[(BLACK_PAWN - 1) as usize] == 0{
+                    bonus += 20;
+                }
+                else {
+                    bonus += 15;
+                }
+            } 
+
+            // Bonus if the rook is in the 7th rank if either the king is in 8th rank or there are pawns on the 7th rank
+            if rank == 6 && 
+            (self.piece_bitboards[(BLACK_KING - 1) as usize] & RANK_MASKS[7] != 0 
+            || self.piece_bitboards[(BLACK_PAWN - 1) as usize] & RANK_MASKS[rank as usize] != 0){
+                bonus += 30;
+            }
+
+            valid_attacks &= !self.white_pieces;
+        }
+        else{
+            // Semi-open file
+            if FILE_MASKS[column as usize] & self.piece_bitboards[(BLACK_PAWN - 1) as usize] == 0 {
+                // Open file
+                if FILE_MASKS[column as usize] & self.piece_bitboards[(WHITE_PAWN - 1) as usize] == 0{
+                    bonus += 20;
+                }
+                else {
+                    bonus += 15;
+                }
+            }
+
+            // Bonus if the rook is in the 2th rank if either the king is in 1th rank or there are pawns on the 2th rank
+                if rank == 1 && 
+                (self.piece_bitboards[(WHITE_KING - 1) as usize] & RANK_MASKS[0] != 0 
+                || self.piece_bitboards[(WHITE_PAWN - 1) as usize] & RANK_MASKS[rank as usize] != 0){
+                    bonus += 30;
+                }
+
+            valid_attacks &= !self.black_pieces;
+        }
+
+        bonus += (valid_attacks.count_ones() as i32 - 7)*3;
+
+        bonus
     }
 
     fn pawn_value(&self, piece: u8, square: u8) -> i32 {
