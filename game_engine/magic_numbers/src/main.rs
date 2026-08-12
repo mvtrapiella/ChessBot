@@ -439,6 +439,57 @@ fn print_zobrist_keys(rng: &mut XorShift64) {
     println!("];");
 }
 
+// Passed-pawn masks: for a pawn on `square`, the set of squares (its own file
+// plus both adjacent files, restricted to ranks strictly ahead of it in that
+// color's direction of travel) that must contain no enemy pawns for it to
+// count as passed. [0] = White's masks, [1] = Black's, indexed by square
+// (0..64) -- matches the PawnMasks::passed_pawn_masks shape directly, just
+// printed as a flat const instead of built into a struct at runtime, same as
+// BISHOP_MAGICS/PIECE_SQUARE_KEYS above.
+fn print_passed_pawn_masks() {
+    const FILE_A: u64 = 0x0101_0101_0101_0101;
+
+    let mut masks = [[0u64; 64]; 2];
+
+    for square in 0..64usize {
+        let file = square % 8;
+        let rank = square / 8;
+
+        // Own file plus both adjacent files (if they exist)
+        let mut files_mask = FILE_A << file;
+        if file > 0 {
+            files_mask |= FILE_A << (file - 1);
+        }
+        if file < 7 {
+            files_mask |= FILE_A << (file + 1);
+        }
+
+        // White looks toward rank 8, Black toward rank 1
+        let mut white_front = 0u64;
+        for r in (rank + 1)..8 {
+            white_front |= 0xFFu64 << (r * 8);
+        }
+        masks[0][square] = files_mask & white_front;
+
+        let mut black_front = 0u64;
+        for r in 0..rank {
+            black_front |= 0xFFu64 << (r * 8);
+        }
+        masks[1][square] = files_mask & black_front;
+    }
+
+    println!("pub const PASSED_PAWN_MASKS: [[u64; 64]; 2] = [");
+    for color in 0..2 {
+        print!("  [");
+        for square in 0..64 {
+            print!("0x{:016x}, ", masks[color][square]);
+            if (square + 1) % 4 == 0 { print!("\n   "); }
+        }
+        println!("],");
+    }
+    println!("];");
+}
+
 fn main() {
     let mut rng = XorShift64::new(123456789); // Fixed seed for reproductibility, so the 64 magic number will be always be the same
     
@@ -461,4 +512,6 @@ fn main() {
     println!("];");
 
     print_zobrist_keys(&mut rng);
+
+    print_passed_pawn_masks();
 }
