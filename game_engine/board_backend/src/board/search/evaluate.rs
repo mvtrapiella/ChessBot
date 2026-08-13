@@ -226,8 +226,8 @@ pub const RANK_MASKS: [u64; 8] = [
     0xFF00_0000_0000_0000, // Rank 8 (a8 - h8)
 ];
 
-const PASSED_PAWN_MG: i32 = 40;
-const PASSED_PAWN_EG: i32 = 120;
+const PASSED_PAWN_MG_BY_RANK: [i32; 8] = [0, 5, 10, 15, 25, 40, 60, 0];
+const PASSED_PAWN_EG_BY_RANK: [i32; 8] = [0, 10, 20, 35, 60, 100, 180, 0];
 
 const WHITE_MINOR_HOME_MASK: u64 = (1u64 << 1) | (1u64 << 2) | (1u64 << 5) | (1u64 << 6);   // b1, c1, f1, g1
 const BLACK_MINOR_HOME_MASK: u64 = (1u64 << 57) | (1u64 << 58) | (1u64 << 61) | (1u64 << 62); // b8, c8, f8, g8
@@ -652,7 +652,7 @@ impl Board{
         // Passed pawn: we must check if there is eny enemy pawn on the adyacent or same column
         if piece == WHITE_PAWN {
             if self.piece_bitboards[(BLACK_PAWN - 1) as usize] & PASSED_PAWN_MASKS[White as usize][square as usize] == 0 {
-                bonus += self.interpolate_score(PASSED_PAWN_MG, PASSED_PAWN_EG, phase) + rank as i32 *10;
+                bonus += self.interpolate_score(PASSED_PAWN_MG_BY_RANK[rank as usize], PASSED_PAWN_EG_BY_RANK[rank as usize], phase);
             }
 
             // Isolated pawns apply a penalty
@@ -667,7 +667,7 @@ impl Board{
         }
         else {
             if self.piece_bitboards[(WHITE_PAWN - 1) as usize] & PASSED_PAWN_MASKS[Black as usize][square as usize] == 0 {
-                bonus += self.interpolate_score(PASSED_PAWN_MG, PASSED_PAWN_EG, phase) + rank as i32 *10;
+                bonus += self.interpolate_score(PASSED_PAWN_MG_BY_RANK[rank as usize], PASSED_PAWN_EG_BY_RANK[rank as usize], phase);
             } 
 
             // Isolated pawns apply a penalty
