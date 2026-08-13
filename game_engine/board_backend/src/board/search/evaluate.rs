@@ -1,5 +1,3 @@
-use std::clone;
-
 use crate::board::Color::{Black, White};
 use crate::board::movegen::masks::bishop_masks::{BISHOP_ATTACKS_TABLE, BISHOP_MAGICS, BISHOP_MASKS, BISHOP_OFFSETS, BISHOP_SHIFTS};
 use crate::board::movegen::masks::rook_masks::{ROOK_ATTACKS_TABLE, ROOK_MAGICS, ROOK_MASKS, ROOK_OFFSETS, ROOK_SHIFTS};
@@ -96,6 +94,25 @@ pub const PAWN_PST: [i32; 64] = [
     50, 50, 50, 50, 50, 50, 50, 50,
     // Row 8 (a8 - h8) -> Imposible (here the pawn has already converted into another piece)
      0,  0,  0,  0,  0,  0,  0,  0,
+];
+
+pub const QUEEN_PST: [i32; 64] = [
+    // Rank 1 (a1 - h1) -> Starting position (d1) and back rank
+    -20, -10, -10,  -5,  -5, -10, -10, -20,
+    // Rank 2 (a2 - h2) -> Safe development squares
+    -10,   0,   0,   0,   0,   0,   0, -10,
+    // Rank 3 (a3 - h3)
+    -10,   0,   5,   5,   5,   5,   0, -10,
+    // Rank 4 (a4 - h4) -> Center control
+     -5,   0,   5,   5,   5,   5,   0,  -5,
+    // Rank 5 (a5 - h5)
+      0,   0,   5,   5,   5,   5,   0,  -5,
+    // Rank 6 (a6 - h6)
+    -10,   5,   5,   5,   5,   5,   0, -10,
+    // Rank 7 (a7 - h7) -> Infiltration
+    -10,   0,   5,   0,   0,   0,   0, -10,
+    // Rank 8 (a8 - h8) -> Enemy back rank
+    -20, -10, -10,  -5,  -5, -10, -10, -20,
 ];
 
 // This is a table with a precomputed masks for the different pawn possitions so we can easily check
@@ -234,6 +251,42 @@ impl Board{
             WHITE_KING | BLACK_KING => KING_VALUE,
             _ => 0,
         }
+    }
+
+    fn queen_value(&self, piece: u8, square: u8) -> i32 {
+        let mut bonus = QUEEN_PST[square as usize];
+
+        // Rook move
+        let rook_blockers = self.all_pieces & ROOK_MASKS[square as usize];
+        let rook_magic = ROOK_MAGICS[square as usize];
+        let rook_shift = ROOK_SHIFTS[square as usize];
+        let rook_offset = ROOK_OFFSETS[square as usize];
+
+        // Bishop move
+        let bishop_blockers = self.all_pieces & BISHOP_MASKS[square as usize];
+        let bishop_magic = BISHOP_MAGICS[square as usize];
+        let bishop_shift = BISHOP_SHIFTS[square as usize];
+        let bishop_offset = BISHOP_OFFSETS[square as usize];
+
+        let rook_hash = (rook_blockers.wrapping_mul(rook_magic) >> rook_shift) as usize;
+
+        let mut valid_attacks = ROOK_ATTACKS_TABLE[rook_hash + rook_offset];
+
+        let bishop_hash = (bishop_blockers.wrapping_mul(bishop_magic) >> bishop_shift) as usize;
+
+        valid_attacks |= BISHOP_ATTACKS_TABLE[bishop_hash + bishop_offset];
+
+        if piece == WHITE_QUEEN {
+            valid_attacks &= !self.white_pieces;
+        }
+        else{
+            valid_attacks &= !self.black_pieces;
+        }
+
+        // Bonus for movility
+        bonus += (valid_attacks.count_ones() as i32 - 14)*1;
+
+        bonus
     }
 
     // If the white bishop pair is conserved we give a bonus
