@@ -23,6 +23,7 @@ pub struct Position{
     // gets overwritten with unrelated hypothetical positions explored during search, and
     // wouldn't give an accurate repetition count.
     pub position_history: Vec<u64>,
+    pub moves_counter: u32,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -56,11 +57,16 @@ impl Position{
 
         while self.game_status() == GameStatus::InProgress{
             self.user_make_move(user_color, depth);
-            self.position_history.push(self.board.zobrian_hash);
+            self.record_real_move();
             self.board.print_board(user_color);
         }
 
         Self::print_game_over(self.game_status());
+    }
+
+    pub fn record_real_move(&mut self) {
+        self.position_history.push(self.board.zobrian_hash);
+        self.moves_counter += 1;
     }
 
     fn print_game_over(status: GameStatus) {

@@ -1,4 +1,5 @@
 use crate::board::Color::{Black, White};
+use crate::board::make_move::{WHITE_SHORT_CASTLE, WHITE_LONG_CASTLE, BLACK_SHORT_CASTLE, BLACK_LONG_CASTLE};
 use crate::board::movegen::masks::bishop_masks::{BISHOP_ATTACKS_TABLE, BISHOP_MAGICS, BISHOP_MASKS, BISHOP_OFFSETS, BISHOP_SHIFTS};
 use crate::board::movegen::masks::rook_masks::{ROOK_ATTACKS_TABLE, ROOK_MAGICS, ROOK_MASKS, ROOK_OFFSETS, ROOK_SHIFTS};
 use crate::board::{Board, Color};
@@ -115,6 +116,44 @@ pub const QUEEN_PST: [i32; 64] = [
     -20, -10, -10,  -5,  -5, -10, -10, -20,
 ];
 
+pub const KING_MG_PST: [i32; 64] = [
+    // Rank 1 (a1 - h1) -> Rewards castled positions (g1, b1, c1)
+     20,  30,  10,   0,   0,  10,  30,  20,
+    // Rank 2 (a2 - h2)
+     20,  20,   0,   0,   0,   0,  20,  20,
+    // Rank 3 (a3 - h3) -> Penalizes stepping out too early
+    -10, -20, -20, -20, -20, -20, -20, -10,
+    // Rank 4 (a4 - h4)
+    -20, -30, -30, -40, -40, -30, -30, -20,
+    // Rank 5 (a5 - h5)
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    // Rank 6 (a6 - h6)
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    // Rank 7 (a7 - h7)
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    // Rank 8 (a8 - h8)
+    -30, -40, -40, -50, -50, -40, -40, -30,
+];
+
+pub const KING_EG_PST: [i32; 64] = [
+    // Rank 1 (a1 - h1) -> Penalizes staying in corners
+    -50, -40, -30, -20, -20, -30, -40, -50,
+    // Rank 2 (a2 - h2)
+    -30, -20, -10,   0,   0, -10, -20, -30,
+    // Rank 3 (a3 - h3)
+    -30, -10,  20,  30,  30,  20, -10, -30,
+    // Rank 4 (a4 - h4) -> High bonus for central control
+    -30, -10,  30,  40,  40,  30, -10, -30,
+    // Rank 5 (a5 - h5) -> High bonus for central control
+    -30, -10,  30,  40,  40,  30, -10, -30,
+    // Rank 6 (a6 - h6)
+    -30, -10,  20,  30,  30,  20, -10, -30,
+    // Rank 7 (a7 - h7)
+    -30, -20, -10,   0,   0, -10, -20, -30,
+    // Rank 8 (a8 - h8)
+    -50, -40, -30, -20, -20, -30, -40, -50,
+];
+
 // This is a table with a precomputed masks for the different pawn possitions so we can easily check
 // if the pawn is a passed or not pawn
 pub const PASSED_PAWN_MASKS: [[u64; 64]; 2] = [
@@ -210,14 +249,14 @@ pub const QUEEN_PHASE:  i32 = 4;
 
 
 impl Board{
-    pub fn evaluate(&self) -> i32{
+    pub fn evaluate(&self, moves_counter: u32) -> i32{
         let phase = self.calculate_game_phase();
         let (own_color, own_bitboard, enemy_color, enemy_bitboard) = match self.side_to_move {
             Color::White => (White, self.white_pieces, Black, self.black_pieces),
             Color::Black => (Black, self.black_pieces, White, self.white_pieces),
         };
 
-        self.material_value(own_bitboard, own_color, phase) - self.material_value(enemy_bitboard, enemy_color, phase)
+        self.material_value(own_bitboard, own_color, phase, moves_counter) - self.material_value(enemy_bitboard, enemy_color, phase, moves_counter)
     }
 
     fn calculate_game_phase(&self) -> i32 {
@@ -247,7 +286,7 @@ impl Board{
     }
 
     // Sums the material value of every piece on the given bitboard (e.g. self.white_pieces).
-    fn material_value(&self, mut bitboard: u64, color: Color, phase: i32) -> i32 {
+    fn material_value(&self, mut bitboard: u64, color: Color, phase: i32, moves_counter: u32) -> i32 {
         // First calculate the bonus for the pair of bishops. If not score is 0
         let mut total = self.pair_of_bishops(color);
 
@@ -257,7 +296,7 @@ impl Board{
         while bitboard != 0 {
             let square = bitboard.trailing_zeros();
 
-            total += self.piece_value(self.squares[square as usize], square as u8, phase);
+            total += self.piece_value(self.squares[square as usize], square as u8, phase, moves_counter);
 
             bitboard &= bitboard - 1;
         }
@@ -266,7 +305,7 @@ impl Board{
     }
 
     // Scores a capture
-    pub fn score_move(&self, mv: &Move) -> i32 {
+    pub fn score_move(&self, mv: &Move, moves_counter: u32) -> i32 {
         if self.is_capture(mv) {
             let attacker = self.squares[mv.origin as usize];
             let victim = self.squares[mv.destination as usize];
@@ -277,22 +316,98 @@ impl Board{
             // outweigh victim_value * 10 for a low-value victim (e.g. a king capturing a
             // pawn: 100*10 - 2000 = -1000), scoring a real capture below a quiet move (0).
             // A cheap ordinal rank can never do that regardless of how piece_value is tuned.
-            return (self.piece_value(victim, mv.destination, phase) * 10) - self.attacker_rank(attacker);
+            return (self.piece_value(victim, mv.destination, phase, moves_counter) * 10) - self.attacker_rank(attacker);
         }
 
         0
     }
 
-    pub fn piece_value(&self, piece: u8, square: u8, phase: i32) -> i32{
+    pub fn piece_value(&self, piece: u8, square: u8, phase: i32, moves_counter: u32) -> i32{
         match piece{
             WHITE_PAWN | BLACK_PAWN => PAWN_VALUE + self.pawn_value(piece, square, phase),
             WHITE_KNIGHT | BLACK_KNIGHT => KNIGHT_VALUE + self.knight_value(square),
             WHITE_BISHOP | BLACK_BISHOP => BISHOP_VALUE + self.bishop_value(piece, square),
             WHITE_ROOK | BLACK_ROOK => ROOK_VALUE + self.trapped_rook_penalty(piece, square) + self.rook_value(piece, square),
             WHITE_QUEEN | BLACK_QUEEN => QUEEN_VALUE + self.early_queen_penalty(piece, square, phase) + self.queen_value(piece, square),
-            WHITE_KING | BLACK_KING => KING_VALUE,
+            WHITE_KING | BLACK_KING => KING_VALUE
+                + self.king_value(piece, square, phase)
+                + self.pawn_shield_penalty(piece, square, phase)
+                + self.lost_castling_penalty(piece, square, moves_counter),
             _ => 0,
         }
+    }
+
+    fn lost_castling_penalty(&self, piece: u8, square: u8, moves_counter: u32) -> i32 {
+        const CASTLE_GRACE_PERIOD_PLIES: u32 = 30;
+
+        if moves_counter >= CASTLE_GRACE_PERIOD_PLIES {
+            return 0;
+        }
+
+        let is_white = piece == WHITE_KING;
+        let (castle_rights_mask, kingside_square, queenside_square) = if is_white {
+            (WHITE_SHORT_CASTLE | WHITE_LONG_CASTLE, 6, 2)
+        } else {
+            (BLACK_SHORT_CASTLE | BLACK_LONG_CASTLE, 62, 58)
+        };
+
+        if square == kingside_square || square == queenside_square {
+            return 0;
+        }
+
+        if self.castling_rights & castle_rights_mask == 0 {
+            -30
+        } else {
+            0
+        }
+    }
+
+    fn king_value(&self, piece: u8, square: u8, phase: i32) -> i32 {
+        let mut bonus = 0;
+
+        let index = if piece == WHITE_KING {
+            square
+        }
+        else {
+            square^56
+        };
+
+        bonus += self.interpolate_score(KING_MG_PST[index as usize], KING_EG_PST[index as usize], phase);
+
+        bonus
+    }
+
+    fn pawn_shield_penalty(&self, piece: u8, square: u8, phase: i32) -> i32 {
+        // Only matters while there's still enough material for a mating attack to be a real threat
+        if phase <= 10 {
+            return 0;
+        }
+
+        let is_white = piece == WHITE_KING;
+        let own_pawns = if is_white {
+            self.piece_bitboards[(WHITE_PAWN - 1) as usize]
+        } else {
+            self.piece_bitboards[(BLACK_PAWN - 1) as usize]
+        };
+
+        // Only check when the king is actually on a castled square -- an uncastled
+        // king stuck in the center has much bigger problems than a missing pawn.
+        let shield_mask: u64 = if is_white {
+            match square {
+                6 => (1u64 << 13) | (1u64 << 14) | (1u64 << 15), // Kg1 -> f2, g2, h2
+                2 => (1u64 << 8)  | (1u64 << 9)  | (1u64 << 10), // Kc1 -> a2, b2, c2
+                _ => return 0,
+            }
+        } else {
+            match square {
+                62 => (1u64 << 53) | (1u64 << 54) | (1u64 << 55), // Kg8 -> f7, g7, h7
+                58 => (1u64 << 48) | (1u64 << 49) | (1u64 << 50), // Kc8 -> a7, b7, c7
+                _ => return 0,
+            }
+        };
+
+        let missing = 3 - (own_pawns & shield_mask).count_ones() as i32;
+        -(missing * 15)
     }
 
     fn early_queen_penalty(&self, piece: u8, square: u8, phase: i32) -> i32 {

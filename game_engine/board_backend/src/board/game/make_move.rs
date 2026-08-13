@@ -12,10 +12,10 @@ pub struct Action {
     pub previous_halfmove_clock: u8,
 }
 
-const WHITE_SHORT_CASTLE: u8 = 0x01;
-const WHITE_LONG_CASTLE: u8 = 0x02;
-const BLACK_SHORT_CASTLE: u8 = 0x04;
-const BLACK_LONG_CASTLE: u8 = 0x08;
+pub const WHITE_SHORT_CASTLE: u8 = 0x01;
+pub const WHITE_LONG_CASTLE: u8 = 0x02;
+pub const BLACK_SHORT_CASTLE: u8 = 0x04;
+pub const BLACK_LONG_CASTLE: u8 = 0x08;
 
 impl Position {
     pub fn make_move(&mut self, m: Move) {
@@ -237,7 +237,6 @@ impl Position {
             self.board.black_pieces = self.board.piece_bitboards[6..12].iter().fold(0u64, |acc, bb| acc | bb);
             self.board.all_pieces = self.board.white_pieces | self.board.black_pieces;
 
-            // Change turn
             self.board.switch_turn();
         }
     }
