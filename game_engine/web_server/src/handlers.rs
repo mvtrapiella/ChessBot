@@ -45,6 +45,7 @@ pub async fn create_game(
         transposition_table: HashMap::new(),
         position_history: Vec::new(),
         moves_counter: 0,
+        search_path_hashes: Vec::new(),
     };
     position.position_history.push(position.board.zobrian_hash);
 

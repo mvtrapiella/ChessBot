@@ -24,6 +24,7 @@ pub struct Position{
     // wouldn't give an accurate repetition count.
     pub position_history: Vec<u64>,
     pub moves_counter: u32,
+    pub search_path_hashes: Vec<u64>,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

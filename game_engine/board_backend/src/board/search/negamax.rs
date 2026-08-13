@@ -10,6 +10,18 @@ impl Position{
         let original_alpha = alpha;
         let hash = self.board.zobrian_hash;
 
+        // A position recurring anywhere in the real game so far, or anywhere earlier in this
+        // same search branch, is treated as a draw and cut off immediately -- before the TT
+        // lookup, since a cached score from a context where this same hash wasn't a repetition
+        // would otherwise be reused here incorrectly. This must never be written back into
+        // the transposition table below either, since "is this a repetition" depends on the
+        // search path, not on the hash alone.
+        let repetition_count = self.position_history.iter().filter(|&&h| h == hash).count()
+            + self.search_path_hashes.iter().filter(|&&h| h == hash).count();
+        if repetition_count >= 2 {
+            return 0;
+        }
+
         // Transposition table lookup: a hit is only usable if it was searched at least as
         // deep as we need right now, and its bound is conclusive for the current alpha/beta
         // window. This runs before move generation so a hit skips that work entirely.
@@ -54,7 +66,9 @@ impl Position{
 
         for m in legal_moves {
             self.make_move(m);
+            self.search_path_hashes.push(self.board.zobrian_hash);
             let score = -self.negamax(depth - 1, ply + 1, -beta, -alpha);
+            self.search_path_hashes.pop();
             self.undo_move();
 
             if score > best {
@@ -90,6 +104,8 @@ impl Position{
     }
 
     pub fn find_best_move(&mut self, depth: u32) -> Option<Move> {
+        self.search_path_hashes.clear();
+
         let mut legal_moves: Vec<Move> = self.board.all_legal_moves();
 
         if legal_moves.is_empty() {
@@ -107,12 +123,14 @@ impl Position{
 
         for m in legal_moves {
             self.make_move(m);
+            self.search_path_hashes.push(self.board.zobrian_hash);
             // We negate because the player to move after our move is the opponent: negamax
             // scores from whoever's turn it is at that node, so the opponent's best result
             // is exactly as good for them as it is bad for us -- negating converts it back
             // to our own perspective. ply starts at 1 here since one move has been played.
             // depth.saturating_sub(1) avoids underflowing depth (a u32) if depth == 0.
             let score = -self.negamax(depth.saturating_sub(1), 1, -beta, -alpha);
+            self.search_path_hashes.pop();
             self.undo_move();
 
             if score > best_score {
