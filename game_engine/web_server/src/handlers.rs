@@ -44,6 +44,7 @@ pub async fn create_game(
         history: Vec::new(),
         transposition_table: HashMap::new(),
         position_history: Vec::new(),
+        moves_counter: 0,
     };
     position.position_history.push(position.board.zobrian_hash);
 
@@ -59,7 +60,7 @@ pub async fn create_game(
             .find_best_move(payload.depth)
             .expect("The game has not ended so the bot should make a move");
         position.make_move(opening_move);
-        position.position_history.push(position.board.zobrian_hash);
+        position.record_real_move();
 
         let promotion_letter = opening_move
             .promotion
@@ -163,7 +164,7 @@ pub async fn make_move(
         .apply_move_str(&move_str)
         .map_err(|_| ApiError::BadRequest("Illegal move".to_string()))?;
 
-    game.position.position_history.push(game.position.board.zobrian_hash);
+    game.position.record_real_move();
 
     let user_ply = game.move_history.len() as u32 + 1;
     game.move_history.push(MoveRecord {
@@ -185,7 +186,7 @@ pub async fn make_move(
 
         let bot_mv: Move = game.position.find_best_move(game.depth).expect("The game has not ended so the bot should make a move");
         game.position.make_move(bot_mv);
-        game.position.position_history.push(game.position.board.zobrian_hash);
+        game.position.record_real_move();
 
         let promotion_letter = bot_mv
             .promotion
@@ -235,6 +236,7 @@ pub async fn undo_move(
 
     let position_history_len = game.position.position_history.len();
     game.position.position_history.truncate(position_history_len - 2);
+    game.position.moves_counter = game.position.moves_counter.saturating_sub(2);
 
     let move_history_len = game.move_history.len();
     game.move_history.truncate(move_history_len - 2);

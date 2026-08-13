@@ -44,7 +44,7 @@ impl Position{
         }
 
         if depth == 0 {
-            return self.board.evaluate();
+            return self.board.evaluate(self.moves_counter);
         }
 
         self.order_moves(&mut legal_moves);
@@ -141,6 +141,6 @@ impl Position{
         // It is more faster than the sort_by_key because in that case it matters the order of elements wtih the same result in the closure
         // so a heap copy must be used (all of this internally in the method). We negate the score_move because the sort_unstable_by_key order from smaller to bigger so
         // the most valuable captures will be last (contrary of what we want), so we negate the result
-        moves.sort_unstable_by_key(|mv| -self.board.score_move(mv));
+        moves.sort_unstable_by_key(|mv| -self.board.score_move(mv, self.moves_counter));
     }
 }

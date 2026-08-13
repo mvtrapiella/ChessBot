@@ -13,7 +13,7 @@ fn position_with(pieces: &[(u8, u8)], side_to_move: Color) -> Position {
     }
     board.side_to_move = side_to_move;
     board.update_bitboards();
-    Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new() }
+    Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new(), moves_counter: 0}
 }
 
 #[test]
