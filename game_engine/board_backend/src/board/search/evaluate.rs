@@ -328,7 +328,7 @@ impl Board{
             WHITE_KNIGHT | BLACK_KNIGHT => KNIGHT_VALUE + self.knight_value(square),
             WHITE_BISHOP | BLACK_BISHOP => BISHOP_VALUE + self.bishop_value(piece, square),
             WHITE_ROOK | BLACK_ROOK => ROOK_VALUE + self.trapped_rook_penalty(piece, square) + self.rook_value(piece, square),
-            WHITE_QUEEN | BLACK_QUEEN => QUEEN_VALUE + self.early_queen_penalty(piece, square, phase) + self.queen_value(piece, square),
+            WHITE_QUEEN | BLACK_QUEEN => QUEEN_VALUE + self.early_queen_penalty(piece, square, moves_counter) + self.queen_value(piece, square),
             WHITE_KING | BLACK_KING => KING_VALUE
                 + self.king_value(piece, square, phase)
                 + self.pawn_shield_penalty(piece, square, phase)
@@ -410,7 +410,13 @@ impl Board{
         -(missing * 15)
     }
 
-    fn early_queen_penalty(&self, piece: u8, square: u8, phase: i32) -> i32 {
+    fn early_queen_penalty(&self, piece: u8, square: u8, moves_counter: u32) -> i32 {
+        const QUEEN_DEVELOPMENT_GRACE_PERIOD_PLIES: u32 = 20;
+
+        if moves_counter >= QUEEN_DEVELOPMENT_GRACE_PERIOD_PLIES {
+            return 0;
+        }
+
         let (home_square, minor_home_mask, own_knights, own_bishops) = if piece == WHITE_QUEEN {
             (3, WHITE_MINOR_HOME_MASK, self.piece_bitboards[(WHITE_KNIGHT - 1) as usize], self.piece_bitboards[(WHITE_BISHOP - 1) as usize])
         } else {
@@ -424,12 +430,7 @@ impl Board{
         // Only counts minors still literally on their own starting square, not just alive
         let undeveloped = ((own_knights | own_bishops) & minor_home_mask).count_ones() as i32;
 
-        // Only matters while material phase is still high (few/no trades yet -- a cheap proxy for "early")
-        if phase > 20 {
-            -(undeveloped * 10)
-        } else {
-            0
-        }
+        -(undeveloped * 10)
     }
 
     fn queen_value(&self, piece: u8, square: u8) -> i32 {
