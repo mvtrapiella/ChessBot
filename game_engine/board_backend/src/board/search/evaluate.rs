@@ -327,7 +327,10 @@ impl Board{
             WHITE_PAWN | BLACK_PAWN => PAWN_VALUE + self.pawn_value(piece, square, phase),
             WHITE_KNIGHT | BLACK_KNIGHT => KNIGHT_VALUE + self.knight_value(square),
             WHITE_BISHOP | BLACK_BISHOP => BISHOP_VALUE + self.bishop_value(piece, square),
-            WHITE_ROOK | BLACK_ROOK => ROOK_VALUE + self.trapped_rook_penalty(piece, square) + self.rook_value(piece, square),
+            WHITE_ROOK | BLACK_ROOK => ROOK_VALUE
+                + self.trapped_rook_penalty(piece, square)
+                + self.undeveloped_rook_penalty(piece, square, moves_counter)
+                + self.rook_value(piece, square),
             WHITE_QUEEN | BLACK_QUEEN => QUEEN_VALUE + self.early_queen_penalty(piece, square, moves_counter) + self.queen_value(piece, square),
             WHITE_KING | BLACK_KING => KING_VALUE
                 + self.king_value(piece, square, phase)
@@ -564,6 +567,22 @@ impl Board{
         }
 
         0
+    }
+
+    fn undeveloped_rook_penalty(&self, piece: u8, square: u8, moves_counter: u32) -> i32 {
+        const ROOK_DEVELOPMENT_GRACE_PERIOD_PLIES: u32 = 24;
+
+        if moves_counter < ROOK_DEVELOPMENT_GRACE_PERIOD_PLIES {
+            return 0;
+        }
+
+        let is_home_square = if piece == WHITE_ROOK {
+            square == 0 || square == 7
+        } else {
+            square == 56 || square == 63
+        };
+
+        if is_home_square { -25 } else { 0 }
     }
 
     fn rook_value(&self, piece: u8, square: u8) -> i32 {
