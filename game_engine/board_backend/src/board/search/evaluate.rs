@@ -187,6 +187,12 @@ pub const RANK_MASKS: [u64; 8] = [
     0xFF00_0000_0000_0000, // Rank 8 (a8 - h8)
 ];
 
+const PASSED_PAWN_MG: i32 = 40;
+const PASSED_PAWN_EG: i32 = 120;
+
+const WHITE_MINOR_HOME_MASK: u64 = (1u64 << 1) | (1u64 << 2) | (1u64 << 5) | (1u64 << 6);   // b1, c1, f1, g1
+const BLACK_MINOR_HOME_MASK: u64 = (1u64 << 57) | (1u64 << 58) | (1u64 << 61) | (1u64 << 62); // b8, c8, f8, g8
+
 pub const PAWN_VALUE: i32 = 100;
 pub const KNIGHT_VALUE: i32 = 300;
 pub const BISHOP_VALUE: i32 = 300;
@@ -194,19 +200,54 @@ pub const ROOK_VALUE: i32 = 500;
 pub const QUEEN_VALUE: i32 = 900;
 pub const KING_VALUE: i32 = 2000;
 
+pub const MAX_PHASE: i32 = 24;
+
+// Weight of phase
+pub const KNIGHT_PHASE: i32 = 1;
+pub const BISHOP_PHASE: i32 = 1;
+pub const ROOK_PHASE:   i32 = 2;
+pub const QUEEN_PHASE:  i32 = 4;
+
 
 impl Board{
     pub fn evaluate(&self) -> i32{
+        let phase = self.calculate_game_phase();
         let (own_color, own_bitboard, enemy_color, enemy_bitboard) = match self.side_to_move {
             Color::White => (White, self.white_pieces, Black, self.black_pieces),
             Color::Black => (Black, self.black_pieces, White, self.white_pieces),
         };
 
-        self.material_value(own_bitboard, own_color) - self.material_value(enemy_bitboard, enemy_color)
+        self.material_value(own_bitboard, own_color, phase) - self.material_value(enemy_bitboard, enemy_color, phase)
+    }
+
+    fn calculate_game_phase(&self) -> i32 {
+        let mut phase: i32 = 0;
+
+        // Count Knights
+        phase += (self.piece_bitboards[(WHITE_KNIGHT - 1) as usize].count_ones() as i32 + self.piece_bitboards[(BLACK_KNIGHT - 1) as usize].count_ones() as i32)*KNIGHT_PHASE;
+        
+        // Count Bishops
+        phase += (self.piece_bitboards[(WHITE_BISHOP - 1) as usize].count_ones() as i32 + self.piece_bitboards[(BLACK_BISHOP - 1) as usize].count_ones() as i32)*BISHOP_PHASE;
+    
+        // Count Rooks
+        phase += (self.piece_bitboards[(WHITE_ROOK - 1) as usize].count_ones() as i32 + self.piece_bitboards[(BLACK_ROOK - 1) as usize].count_ones() as i32)*ROOK_PHASE;
+    
+        // Count Queens
+        phase += (self.piece_bitboards[(WHITE_QUEEN - 1) as usize].count_ones() as i32 + self.piece_bitboards[(BLACK_QUEEN - 1) as usize].count_ones() as i32)*QUEEN_PHASE;
+
+        // We use the min in case there are promotions so the max_phase is never exceded
+        phase.min(MAX_PHASE)
+    }
+
+    fn interpolate_score(&self, mg_score: i32, eg_score: i32, phase: i32) -> i32 {
+        let mg_weight = phase;
+        let eg_weight = MAX_PHASE - phase;
+
+        (mg_score * mg_weight + eg_score * eg_weight) / MAX_PHASE
     }
 
     // Sums the material value of every piece on the given bitboard (e.g. self.white_pieces).
-    fn material_value(&self, mut bitboard: u64, color: Color) -> i32 {
+    fn material_value(&self, mut bitboard: u64, color: Color, phase: i32) -> i32 {
         // First calculate the bonus for the pair of bishops. If not score is 0
         let mut total = self.pair_of_bishops(color);
 
@@ -216,7 +257,7 @@ impl Board{
         while bitboard != 0 {
             let square = bitboard.trailing_zeros();
 
-            total += self.piece_value(self.squares[square as usize], square as u8);
+            total += self.piece_value(self.squares[square as usize], square as u8, phase);
 
             bitboard &= bitboard - 1;
         }
@@ -229,32 +270,56 @@ impl Board{
         if self.is_capture(mv) {
             let attacker = self.squares[mv.origin as usize];
             let victim = self.squares[mv.destination as usize];
+            let phase = self.calculate_game_phase();
 
             // MVV-LVA puntuation. attacker uses a small ordinal rank here, not piece_value's
             // material scale -- piece_value(KING) is large enough (2000) that it could
             // outweigh victim_value * 10 for a low-value victim (e.g. a king capturing a
             // pawn: 100*10 - 2000 = -1000), scoring a real capture below a quiet move (0).
             // A cheap ordinal rank can never do that regardless of how piece_value is tuned.
-            return (self.piece_value(victim, mv.destination) * 10) - self.attacker_rank(attacker);
+            return (self.piece_value(victim, mv.destination, phase) * 10) - self.attacker_rank(attacker);
         }
 
         0
     }
 
-    pub fn piece_value(&self, piece: u8, square: u8) -> i32{
+    pub fn piece_value(&self, piece: u8, square: u8, phase: i32) -> i32{
         match piece{
-            WHITE_PAWN | BLACK_PAWN => PAWN_VALUE + self.pawn_value(piece, square),
+            WHITE_PAWN | BLACK_PAWN => PAWN_VALUE + self.pawn_value(piece, square, phase),
             WHITE_KNIGHT | BLACK_KNIGHT => KNIGHT_VALUE + self.knight_value(square),
             WHITE_BISHOP | BLACK_BISHOP => BISHOP_VALUE + self.bishop_value(piece, square),
             WHITE_ROOK | BLACK_ROOK => ROOK_VALUE + self.trapped_rook_penalty(piece, square) + self.rook_value(piece, square),
-            WHITE_QUEEN | BLACK_QUEEN => QUEEN_VALUE,
+            WHITE_QUEEN | BLACK_QUEEN => QUEEN_VALUE + self.early_queen_penalty(piece, square, phase) + self.queen_value(piece, square),
             WHITE_KING | BLACK_KING => KING_VALUE,
             _ => 0,
         }
     }
 
+    fn early_queen_penalty(&self, piece: u8, square: u8, phase: i32) -> i32 {
+        let (home_square, minor_home_mask, own_knights, own_bishops) = if piece == WHITE_QUEEN {
+            (3, WHITE_MINOR_HOME_MASK, self.piece_bitboards[(WHITE_KNIGHT - 1) as usize], self.piece_bitboards[(WHITE_BISHOP - 1) as usize])
+        } else {
+            (59, BLACK_MINOR_HOME_MASK, self.piece_bitboards[(BLACK_KNIGHT - 1) as usize], self.piece_bitboards[(BLACK_BISHOP - 1) as usize])
+        };
+
+        if square == home_square {
+            return 0; // still home, nothing to penalize
+        }
+
+        // Only counts minors still literally on their own starting square, not just alive
+        let undeveloped = ((own_knights | own_bishops) & minor_home_mask).count_ones() as i32;
+
+        // Only matters while material phase is still high (few/no trades yet -- a cheap proxy for "early")
+        if phase > 20 {
+            -(undeveloped * 10)
+        } else {
+            0
+        }
+    }
+
     fn queen_value(&self, piece: u8, square: u8) -> i32 {
-        let mut bonus = QUEEN_PST[square as usize];
+        let index = if piece == WHITE_QUEEN { square } else { square ^ 56 };
+        let mut bonus = QUEEN_PST[index as usize];
 
         // Rook move
         let rook_blockers = self.all_pieces & ROOK_MASKS[square as usize];
@@ -276,11 +341,42 @@ impl Board{
 
         valid_attacks |= BISHOP_ATTACKS_TABLE[bishop_hash + bishop_offset];
 
+        let rank= square / 8;
+        let enemy_king_square = if piece == WHITE_QUEEN {
+            self.piece_bitboards[(BLACK_KING - 1) as usize].trailing_zeros() as u8
+        } else {
+            self.piece_bitboards[(WHITE_KING - 1) as usize].trailing_zeros() as u8
+        };
+        let enemy_king_column = enemy_king_square % 8;
+        let enemy_king_rank = enemy_king_square / 8;
+
+        // If the queen is pointing to the king direction
+        let king_attack_mask = FILE_MASKS[enemy_king_column as usize] | RANK_MASKS[enemy_king_rank as usize];
+
+        // If the queen is pointing towards the king
+        if king_attack_mask & (1u64 << square) != 0 {
+            bonus += 10;
+        } 
+
         if piece == WHITE_QUEEN {
             valid_attacks &= !self.white_pieces;
+
+            // Bonus if the queen is in the 7th rank if either the king is in 8th rank or there are pawns on the 7th rank
+            if rank == 6 && 
+            (self.piece_bitboards[(BLACK_KING - 1) as usize] & RANK_MASKS[7] != 0 
+            || self.piece_bitboards[(BLACK_PAWN - 1) as usize] & RANK_MASKS[rank as usize] != 0){
+                bonus += 20;
+            }
         }
         else{
             valid_attacks &= !self.black_pieces;
+
+            // Bonus if the queen is in the 2th rank if either the king is in 1th rank or there are pawns on the 2th rank
+            if rank == 1 && 
+            (self.piece_bitboards[(WHITE_KING - 1) as usize] & RANK_MASKS[0] != 0 
+            || self.piece_bitboards[(WHITE_PAWN - 1) as usize] & RANK_MASKS[rank as usize] != 0){
+                bonus += 20;
+            }
         }
 
         // Bonus for movility
@@ -424,7 +520,7 @@ impl Board{
         bonus
     }
 
-    fn pawn_value(&self, piece: u8, square: u8) -> i32 {
+    fn pawn_value(&self, piece: u8, square: u8, phase: i32) -> i32 {
         let index = if piece == WHITE_PAWN {
             square
         }
@@ -436,11 +532,12 @@ impl Board{
         let mut bonus = PAWN_PST[index as usize];
 
         let column = square % 8;
+        let rank = index / 8;
 
         // Passed pawn: we must check if there is eny enemy pawn on the adyacent or same column
         if piece == WHITE_PAWN {
             if self.piece_bitboards[(BLACK_PAWN - 1) as usize] & PASSED_PAWN_MASKS[White as usize][square as usize] == 0 {
-                bonus += 80;
+                bonus += self.interpolate_score(PASSED_PAWN_MG, PASSED_PAWN_EG, phase) + rank as i32 *10;
             }
 
             // Isolated pawns apply a penalty
@@ -455,7 +552,7 @@ impl Board{
         }
         else {
             if self.piece_bitboards[(WHITE_PAWN - 1) as usize] & PASSED_PAWN_MASKS[Black as usize][square as usize] == 0 {
-                bonus += 80;
+                bonus += self.interpolate_score(PASSED_PAWN_MG, PASSED_PAWN_EG, phase) + rank as i32 *10;
             } 
 
             // Isolated pawns apply a penalty
