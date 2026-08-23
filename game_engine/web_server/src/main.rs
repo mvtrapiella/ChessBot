@@ -21,9 +21,11 @@ async fn main() {
     // Create the shared application state
     let state = AppState::new();
 
-    // Allow the Vite dev server to call this API from the browser
+    // Allow the Vite dev server and the dockerized webapp to call this API from the browser
     let cors = CorsLayer::new()
         .allow_origin([
+            "http://localhost:5173".parse::<HeaderValue>().unwrap(),
+            "http://127.0.0.1:5173".parse::<HeaderValue>().unwrap(),
             "http://localhost:5175".parse::<HeaderValue>().unwrap(),
             "http://127.0.0.1:5175".parse::<HeaderValue>().unwrap(),
         ])
@@ -40,11 +42,11 @@ async fn main() {
         .with_state(state)
         .layer(cors);
 
-    // Define the port
-    let listener = TcpListener::bind("127.0.0.1:3000").await.unwrap();
+    // 0.0.0.0 so the server is reachable from outside its container, not just localhost
+    let listener = TcpListener::bind("0.0.0.0:3000").await.unwrap();
 
     // Start the server
-    println!("Server running at  http://127.0.0.1:3000");
+    println!("Server running at  http://0.0.0.0:3000");
     serve(listener, app).await.unwrap();
 }
 
