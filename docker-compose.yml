@@ -1,0 +1,16 @@
+services:
+  backend:
+    build:
+      context: ./
+      dockerfile: ./game_engine/web_server/Dockerfile
+    ports:
+      - "3000:3000"
+  
+  webapp:
+    build:
+      context: ./webapp
+      dockerfile: Dockerfile
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
