@@ -56,6 +56,14 @@ impl Position{
         }
 
         if depth == 0 {
+            // A horizon node that's in check can't be trusted to a static evaluate() even
+            // with no captures on the board -- the side to move might be getting mated or
+            // about to lose material forcibly, so it must be resolved through quiescence
+            // search's evasion handling rather than scored as-is.
+            if self.board.is_in_check(self.board.side_to_move) || !self.stable_position(&mut legal_moves){
+                return self.quiescence_search(ply + 1, -beta, -alpha);
+            }
+
             return self.board.evaluate(self.moves_counter);
         }
 
@@ -153,6 +161,78 @@ impl Position{
         best_move
     }
 
+    fn quiescence_search(&mut self, ply: u32, mut alpha: i32, beta: i32) -> i32{
+        let mut legal_moves = self.board.all_legal_moves();
+
+        // Same terminal check as negamax: an empty move list here means this forcing
+        // capture/check sequence actually ends the game, so it must be scored as a mate
+        // or a draw, never as a material evaluate().
+        if legal_moves.is_empty() {
+            return if self.board.is_in_check(self.board.side_to_move) {
+                -CHECK_MATE + ply as i32
+            } else {
+                0
+            };
+        }
+
+        let in_check = self.board.is_in_check(self.board.side_to_move);
+        let mut best;
+
+        if in_check {
+            // Standing pat isn't legal while in check -- every evasion has to be
+            // searched, there's no "decline to move" baseline to fall back on.
+            best = -INFINITY;
+        } else {
+            // Stand-pat: the score if the side to move simply stops capturing here.
+            // A capture is only worth playing if it beats this baseline -- without it,
+            // a string of bad trades would be forced even when declining is better.
+            let stand_pat = self.board.evaluate(self.moves_counter);
+            if stand_pat >= beta {
+                return stand_pat;
+            }
+            if stand_pat > alpha {
+                alpha = stand_pat;
+            }
+
+            self.filter_non_stable_moves(&mut legal_moves);
+            if legal_moves.is_empty() {
+                return stand_pat;
+            }
+
+            best = stand_pat;
+        }
+
+        self.order_moves(&mut legal_moves);
+
+        for m in legal_moves {
+            self.make_move(m);
+            let score = -self.quiescence_search(ply + 1, -beta, -alpha);
+            self.undo_move();
+
+            if score > best {
+                best = score;
+            }
+            if best > alpha {
+                alpha = best;
+            }
+            if alpha >= beta {
+                break;
+            }
+        }
+
+        best
+    }
+
+    fn stable_position(&self, moves: &mut [Move]) -> bool {
+        for m in moves{
+            if self.board.is_capture(m) || self.board.is_promotion(m) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 
     pub fn order_moves(&self, moves: &mut [Move]) {
         // Sort_unstable_by_key allow us to filter a Vec or Slice giving it a closure (in this case the score of the capture)
@@ -160,5 +240,9 @@ impl Position{
         // so a heap copy must be used (all of this internally in the method). We negate the score_move because the sort_unstable_by_key order from smaller to bigger so
         // the most valuable captures will be last (contrary of what we want), so we negate the result
         moves.sort_unstable_by_key(|mv| -self.board.score_move(mv, self.moves_counter));
+    }
+
+    pub fn filter_non_stable_moves(&self, moves: &mut Vec<Move>) {
+        moves.retain(|mv| self.board.is_capture(mv) || self.board.is_promotion(mv));
     }
 }
