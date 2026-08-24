@@ -117,15 +117,7 @@ impl Position{
         best
     }
 
-    pub fn find_best_move(&mut self, limit: SearchLimit) -> Option<Move> {
-        let depth = match limit {
-            SearchLimit::Depth(d) => d,
-            SearchLimit::TimeBudget(_) => todo!("iterative deepening loop not implemented yet"),
-        };
-
-        let max_time = Duration::from_millis(5000); // 5 seconds
-
-        self.search_path_hashes.clear();
+    fn fix_depth(&mut self, depth: u32) -> Option<Move>{
 
         let mut legal_moves: Vec<Move> = self.board.all_legal_moves();
 
@@ -141,8 +133,6 @@ impl Position{
         let beta = INFINITY;
         let mut best_move = None;
         let mut best_score = -INFINITY;
-
-        let time = Instant::now();
 
         for m in legal_moves {
             self.make_move(m);
@@ -172,12 +162,35 @@ impl Position{
                 break;
             }
 
-            if time.elapsed() >= max_time {
-                break;
-            }
         }
 
         best_move
+    }
+
+    pub fn find_best_move(&mut self, limit: SearchLimit) -> Option<Move> {
+        self.search_path_hashes.clear();
+
+        match limit {
+            SearchLimit::Depth(depth) => self.fix_depth(depth),
+            SearchLimit::TimeBudget(max_time) => {
+                const MAX_DEPTH: u32 = 64; 
+                let start = Instant::now();
+                let mut best_move;
+                let mut depth = 1;
+
+                loop {
+                    best_move = self.fix_depth(depth);
+
+                    depth += 1;
+
+                    if depth > MAX_DEPTH || start.elapsed() >= max_time {
+                        break;
+                    }
+                }
+
+                best_move
+            }
+        }
     }
 
     fn quiescence_search(&mut self, ply: u32, mut alpha: i32, beta: i32) -> i32{
