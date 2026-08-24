@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::time::Duration;
 
 use axum::{
     extract::{Path, State},
@@ -9,19 +10,27 @@ use uuid::Uuid;
 use board_backend::board::{position::GameStatus::InProgress, state::Board, types::Move};
 use board_backend::board::types::{Color, NO_SQUARE};
 use board_backend::board::position::Position;
+use board_backend::board::negamax::SearchLimit;
 
 use crate::dto::{CreateGameRequest, GameStateDTO, LegalMovesDTO, MoveRequest};
 use crate::error::ApiError;
 use crate::notation::{describe_move, piece_letter};
 use crate::state::{AppState, Game, MoveRecord};
 
+const MAX_DIFFICULTY_TIME_BUDGET: Duration = Duration::from_secs(5);
+
 pub async fn create_game(
     State(state): State<AppState>,
     Json(payload): Json<CreateGameRequest>,
 ) -> Result<Json<GameStateDTO>, ApiError> {
-    if payload.depth == 0 {
-        return Err(ApiError::BadRequest("depth must be a positive integer".to_string()));
-    }
+    let search_limit = if payload.max_difficulty {
+        SearchLimit::TimeBudget(MAX_DIFFICULTY_TIME_BUDGET)
+    } else {
+        if payload.depth == 0 {
+            return Err(ApiError::BadRequest("depth must be a positive integer".to_string()));
+        }
+        SearchLimit::Depth(payload.depth)
+    };
 
     let mut board = Board {
         squares: [0; 64],
@@ -46,6 +55,9 @@ pub async fn create_game(
         position_history: Vec::new(),
         moves_counter: 0,
         search_path_hashes: Vec::new(),
+        nodes: 0,
+        deadline: None,
+        search_aborted: false,
     };
     position.position_history.push(position.board.zobrian_hash);
 
@@ -58,7 +70,7 @@ pub async fn create_game(
         let mover_color = position.board.side_to_move;
 
         let opening_move = position
-            .find_best_move(payload.depth)
+            .find_best_move(search_limit)
             .expect("The game has not ended so the bot should make a move");
         position.make_move(opening_move);
         position.record_real_move();
@@ -86,7 +98,7 @@ pub async fn create_game(
     let game = Game {
         position,
         user_color,
-        depth: payload.depth,
+        search_limit,
         move_history,
     };
 
@@ -185,7 +197,7 @@ pub async fn make_move(
         let squares_before_bot_move = game.position.board.squares;
         let bot_color = game.position.board.side_to_move;
 
-        let bot_mv: Move = game.position.find_best_move(game.depth).expect("The game has not ended so the bot should make a move");
+        let bot_mv: Move = game.position.find_best_move(game.search_limit).expect("The game has not ended so the bot should make a move");
         game.position.make_move(bot_mv);
         game.position.record_real_move();
 

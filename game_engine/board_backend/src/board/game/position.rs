@@ -2,6 +2,7 @@ use core::panic;
 use std::collections::HashMap;
 use std::io::stdin;
 use std::println;
+use std::time::Instant;
 
 use crate::board::Color::{Black, White};
 use crate::board::types::{
@@ -9,6 +10,7 @@ use crate::board::types::{
     BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, BLACK_BISHOP, BLACK_KNIGHT,
 };
 use crate::board::zobric::TTEntry;
+use crate::board::negamax::SearchLimit;
 
 use crate::board::state::Board;
 use super::make_move::Action;
@@ -25,6 +27,9 @@ pub struct Position{
     pub position_history: Vec<u64>,
     pub moves_counter: u32,
     pub search_path_hashes: Vec<u64>,
+    pub nodes: u64,
+    pub deadline: Option<Instant>,
+    pub search_aborted: bool,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -97,7 +102,7 @@ impl Position{
             self.make_move(user_move);
         }
         else{
-            let machine_move = self.find_best_move(depth).expect("There should be a move to do");
+            let machine_move = self.find_best_move(SearchLimit::Depth(depth)).expect("There should be a move to do");
 
             self.make_move(machine_move);
         }

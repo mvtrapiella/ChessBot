@@ -54,13 +54,17 @@ pub enum DrawReasonDTO {
     ThreefoldRepetition,
 }
 
-// Struct that stores the user game request info 
-// -> the depth the user wants the bot to operate and the color the user wants to be
+// Struct that stores the user game request info
+// -> the depth the user wants the bot to operate and the color the user wants to be.
+// max_difficulty overrides depth entirely: when set, the bot searches on a time
+// budget instead of a fixed depth, and depth is ignored.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CreateGameRequest {
     pub user_color: ColorDTO,
     pub depth: u32,
+    #[serde(default)]
+    pub max_difficulty: bool,
 }
 
 // Struct that stores the move made by the user

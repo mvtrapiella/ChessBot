@@ -4,6 +4,7 @@ import AppHeader from '../components/AppHeader'
 import Board from './board/Board'
 import { INITIAL_SQUARES } from './board/initialPosition'
 import DepthSelector from './setup/DepthSelector'
+import MaxDifficultyButton from './setup/MaxDifficultyButton'
 import ColorSelector, { type PlayerColorChoice } from './setup/ColorSelector'
 import { createGame, type ColorDTO } from '../api/gameApi'
 import setupStyles from './setup/Setup.module.css'
@@ -24,6 +25,7 @@ function MainWindow() {
     const [squares, setSquares] = useState<number[]>(INITIAL_SQUARES)
     const [selectedSquare, setSelectedSquare] = useState<number | null>(null)
     const [depth, setDepth] = useState(3)
+    const [maxDifficulty, setMaxDifficulty] = useState(false)
     const [colorChoice, setColorChoice] = useState<PlayerColorChoice>('white')
     const [isStarting, setIsStarting] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -62,7 +64,7 @@ function MainWindow() {
         setIsStarting(true)
         setError(null)
 
-        createGame({ userColor: resolveColor(colorChoice), depth })
+        createGame({ userColor: resolveColor(colorChoice), depth, maxDifficulty })
             .then((game) => navigate(`/game/${game.gameId}`))
             .catch((err: Error) => {
                 setError(err.message)
@@ -83,7 +85,11 @@ function MainWindow() {
                 />
 
                 <div className={styles.panel}>
-                    <DepthSelector depth={depth} onChange={setDepth} />
+                    <DepthSelector depth={depth} onChange={setDepth} disabled={maxDifficulty} />
+                    <MaxDifficultyButton
+                        active={maxDifficulty}
+                        onToggle={() => setMaxDifficulty((current) => !current)}
+                    />
                     <ColorSelector selected={colorChoice} onChange={setColorChoice} />
                     <button
                         type="button"

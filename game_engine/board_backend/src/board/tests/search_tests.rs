@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::board::position::Position;
+use crate::board::negamax::SearchLimit;
 use crate::board::state::Board;
 use crate::board::types::{
     Move, Color, WHITE_KING, WHITE_ROOK, WHITE_QUEEN, WHITE_PAWN, BLACK_KING, BLACK_ROOK,
@@ -13,7 +14,7 @@ fn position_with(pieces: &[(u8, u8)], side_to_move: Color) -> Position {
     }
     board.side_to_move = side_to_move;
     board.update_bitboards();
-    Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new() }
+    Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false }
 }
 
 #[test]
@@ -26,7 +27,7 @@ fn finds_mate_in_one() {
         Color::White,
     );
 
-    let best = pos.find_best_move(1);
+    let best = pos.find_best_move(SearchLimit::Depth(1));
 
     assert_eq!(best, Some(Move { origin: 1, destination: 57, promotion: None }));
 }
@@ -42,7 +43,7 @@ fn recognizes_stalemate_as_a_draw() {
 
     assert!(pos.board.all_legal_moves().is_empty());
     assert!(!pos.board.is_in_check(Color::Black));
-    assert_eq!(pos.find_best_move(1), None);
+    assert_eq!(pos.find_best_move(SearchLimit::Depth(1)), None);
 
     let score = pos.negamax(1, 0, -10_000_000, 10_000_000);
     assert_eq!(score, 0);
@@ -59,7 +60,7 @@ fn prefers_a_free_capture_over_a_quiet_move() {
         Color::White,
     );
 
-    let best = pos.find_best_move(2);
+    let best = pos.find_best_move(SearchLimit::Depth(2));
 
     assert_eq!(best, Some(Move { origin: 27, destination: 63, promotion: None }));
 }

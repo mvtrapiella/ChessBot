@@ -788,11 +788,21 @@ impl Board{
 
     pub fn is_capture(&self, m: &Move) -> bool{
         let moved_piece = self.squares[m.origin as usize];
-        let is_pawn = moved_piece == WHITE_PAWN || moved_piece == BLACK_PAWN;
+        let is_pawn: bool = moved_piece == WHITE_PAWN || moved_piece == BLACK_PAWN;
 
         let is_en_passant = is_pawn
             && self.squares[m.destination as usize] == EMPTY
             && m.destination == self.en_passant_square;
         return self.squares[m.destination as usize] != 0 || is_en_passant;
+    }
+
+    pub fn is_promotion(&self, m: &Move) -> bool {
+        let moved_piece = self.squares[m.origin as usize];
+
+        match moved_piece {
+            WHITE_PAWN => m.destination >= 56,
+            BLACK_PAWN => m.destination <= 7,
+            _ => false,
+        }
     }
 }

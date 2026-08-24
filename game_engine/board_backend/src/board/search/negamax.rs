@@ -1,12 +1,44 @@
 use crate::board::position::Position;
 use crate::board::types::Move;
 use crate::board::zobric::{Bound, TTEntry};
+use std::time::{Duration, Instant};
 
 const INFINITY: i32 = 2_000_000;
 const CHECK_MATE: i32 = 1_000_000;
+const NODE_CHECK_INTERVAL: u64 = 2048;
+
+// Copy since a Game needs to hang onto its chosen limit and reuse it for every
+// bot move for the rest of the game, not just the one that created it.
+#[derive(Clone, Copy)]
+pub enum SearchLimit {
+    Depth(u32),
+    TimeBudget(Duration),
+}
 
 impl Position{
+    fn check_deadline(&mut self) {
+        if self.search_aborted {
+            return;
+        }
+
+        self.nodes += 1;
+        if self.nodes % NODE_CHECK_INTERVAL != 0 {
+            return;
+        }
+
+        if let Some(deadline) = self.deadline {
+            if Instant::now() >= deadline {
+                self.search_aborted = true;
+            }
+        }
+    }
+
     pub fn negamax(&mut self, depth: u32, ply: u32, mut alpha: i32, beta: i32) -> i32{
+        self.check_deadline();
+        if self.search_aborted {
+            return 0;
+        }
+
         let original_alpha = alpha;
         let hash = self.board.zobrian_hash;
 
@@ -56,6 +88,14 @@ impl Position{
         }
 
         if depth == 0 {
+            // A horizon node that's in check can't be trusted to a static evaluate() even
+            // with no captures on the board -- the side to move might be getting mated or
+            // about to lose material forcibly, so it must be resolved through quiescence
+            // search's evasion handling rather than scored as-is.
+            if self.board.is_in_check(self.board.side_to_move) || !self.stable_position(&mut legal_moves){
+                return self.quiescence_search(ply + 1, -beta, -alpha);
+            }
+
             return self.board.evaluate(self.moves_counter);
         }
 
@@ -70,6 +110,10 @@ impl Position{
             let score = -self.negamax(depth - 1, ply + 1, -beta, -alpha);
             self.search_path_hashes.pop();
             self.undo_move();
+
+            if self.search_aborted {
+                return 0;
+            }
 
             if score > best {
                 best = score;
@@ -103,8 +147,7 @@ impl Position{
         best
     }
 
-    pub fn find_best_move(&mut self, depth: u32) -> Option<Move> {
-        self.search_path_hashes.clear();
+    fn fix_depth(&mut self, depth: u32) -> Option<Move>{
 
         let mut legal_moves: Vec<Move> = self.board.all_legal_moves();
 
@@ -133,6 +176,10 @@ impl Position{
             self.search_path_hashes.pop();
             self.undo_move();
 
+            if self.search_aborted {
+                return None;
+            }
+
             if score > best_score {
                 best_score = score;
                 best_move = Some(m);
@@ -148,9 +195,126 @@ impl Position{
             if best_score == CHECK_MATE - 1 {
                 break;
             }
+
         }
 
         best_move
+    }
+
+    pub fn find_best_move(&mut self, limit: SearchLimit) -> Option<Move> {
+        self.search_path_hashes.clear();
+        self.nodes = 0;
+        self.search_aborted = false;
+
+        match limit {
+            SearchLimit::Depth(depth) => {
+                self.deadline = None;
+                self.fix_depth(depth)
+            }
+            SearchLimit::TimeBudget(max_time) => {
+                const MAX_DEPTH: u32 = 64;
+                let deadline = Instant::now() + max_time;
+                self.deadline = Some(deadline);
+
+                let mut best_move = None;
+                let mut depth = 1;
+
+                loop {
+                    if let Some(mv) = self.fix_depth(depth) {
+                        best_move = Some(mv);
+                    }
+
+                    depth += 1;
+
+                    if self.search_aborted || depth > MAX_DEPTH || Instant::now() >= deadline {
+                        break;
+                    }
+                }
+
+                best_move
+            }
+        }
+    }
+
+    fn quiescence_search(&mut self, ply: u32, mut alpha: i32, beta: i32) -> i32{
+        self.check_deadline();
+        if self.search_aborted {
+            return 0;
+        }
+
+        let mut legal_moves = self.board.all_legal_moves();
+
+        // Same terminal check as negamax: an empty move list here means this forcing
+        // capture/check sequence actually ends the game, so it must be scored as a mate
+        // or a draw, never as a material evaluate().
+        if legal_moves.is_empty() {
+            return if self.board.is_in_check(self.board.side_to_move) {
+                -CHECK_MATE + ply as i32
+            } else {
+                0
+            };
+        }
+
+        let in_check = self.board.is_in_check(self.board.side_to_move);
+        let mut best;
+
+        if in_check {
+            // Standing pat isn't legal while in check -- every evasion has to be
+            // searched, there's no "decline to move" baseline to fall back on.
+            best = -INFINITY;
+        } else {
+            // Stand-pat: the score if the side to move simply stops capturing here.
+            // A capture is only worth playing if it beats this baseline -- without it,
+            // a string of bad trades would be forced even when declining is better.
+            let stand_pat = self.board.evaluate(self.moves_counter);
+            if stand_pat >= beta {
+                return stand_pat;
+            }
+            if stand_pat > alpha {
+                alpha = stand_pat;
+            }
+
+            self.filter_non_stable_moves(&mut legal_moves);
+            if legal_moves.is_empty() {
+                return stand_pat;
+            }
+
+            best = stand_pat;
+        }
+
+        self.order_moves(&mut legal_moves);
+
+        for m in legal_moves {
+            self.make_move(m);
+            let score = -self.quiescence_search(ply + 1, -beta, -alpha);
+            self.undo_move();
+
+            if self.search_aborted {
+                return 0;
+            }
+
+            if score > best {
+                best = score;
+            }
+            if best > alpha {
+                alpha = best;
+            }
+            if alpha >= beta {
+                break;
+            }
+        }
+
+        best
+    }
+
+    fn stable_position(&self, moves: &mut [Move]) -> bool {
+        for m in moves{
+            if self.board.is_capture(m) || self.board.is_promotion(m) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 
@@ -160,5 +324,9 @@ impl Position{
         // so a heap copy must be used (all of this internally in the method). We negate the score_move because the sort_unstable_by_key order from smaller to bigger so
         // the most valuable captures will be last (contrary of what we want), so we negate the result
         moves.sort_unstable_by_key(|mv| -self.board.score_move(mv, self.moves_counter));
+    }
+
+    pub fn filter_non_stable_moves(&self, moves: &mut Vec<Move>) {
+        moves.retain(|mv| self.board.is_capture(mv) || self.board.is_promotion(mv));
     }
 }
