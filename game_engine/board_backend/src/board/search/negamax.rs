@@ -5,6 +5,7 @@ use std::time::{Duration, Instant};
 
 const INFINITY: i32 = 2_000_000;
 const CHECK_MATE: i32 = 1_000_000;
+const NODE_CHECK_INTERVAL: u64 = 2048;
 
 // Copy since a Game needs to hang onto its chosen limit and reuse it for every
 // bot move for the rest of the game, not just the one that created it.
@@ -15,7 +16,29 @@ pub enum SearchLimit {
 }
 
 impl Position{
+    fn check_deadline(&mut self) {
+        if self.search_aborted {
+            return;
+        }
+
+        self.nodes += 1;
+        if self.nodes % NODE_CHECK_INTERVAL != 0 {
+            return;
+        }
+
+        if let Some(deadline) = self.deadline {
+            if Instant::now() >= deadline {
+                self.search_aborted = true;
+            }
+        }
+    }
+
     pub fn negamax(&mut self, depth: u32, ply: u32, mut alpha: i32, beta: i32) -> i32{
+        self.check_deadline();
+        if self.search_aborted {
+            return 0;
+        }
+
         let original_alpha = alpha;
         let hash = self.board.zobrian_hash;
 
@@ -88,6 +111,10 @@ impl Position{
             self.search_path_hashes.pop();
             self.undo_move();
 
+            if self.search_aborted {
+                return 0;
+            }
+
             if score > best {
                 best = score;
                 best_move = Some(m);
@@ -149,6 +176,10 @@ impl Position{
             self.search_path_hashes.pop();
             self.undo_move();
 
+            if self.search_aborted {
+                return None;
+            }
+
             if score > best_score {
                 best_score = score;
                 best_move = Some(m);
@@ -172,21 +203,30 @@ impl Position{
 
     pub fn find_best_move(&mut self, limit: SearchLimit) -> Option<Move> {
         self.search_path_hashes.clear();
+        self.nodes = 0;
+        self.search_aborted = false;
 
         match limit {
-            SearchLimit::Depth(depth) => self.fix_depth(depth),
+            SearchLimit::Depth(depth) => {
+                self.deadline = None;
+                self.fix_depth(depth)
+            }
             SearchLimit::TimeBudget(max_time) => {
-                const MAX_DEPTH: u32 = 64; 
-                let start = Instant::now();
-                let mut best_move;
+                const MAX_DEPTH: u32 = 64;
+                let deadline = Instant::now() + max_time;
+                self.deadline = Some(deadline);
+
+                let mut best_move = None;
                 let mut depth = 1;
 
                 loop {
-                    best_move = self.fix_depth(depth);
+                    if let Some(mv) = self.fix_depth(depth) {
+                        best_move = Some(mv);
+                    }
 
                     depth += 1;
 
-                    if depth > MAX_DEPTH || start.elapsed() >= max_time {
+                    if self.search_aborted || depth > MAX_DEPTH || Instant::now() >= deadline {
                         break;
                     }
                 }
@@ -197,6 +237,11 @@ impl Position{
     }
 
     fn quiescence_search(&mut self, ply: u32, mut alpha: i32, beta: i32) -> i32{
+        self.check_deadline();
+        if self.search_aborted {
+            return 0;
+        }
+
         let mut legal_moves = self.board.all_legal_moves();
 
         // Same terminal check as negamax: an empty move list here means this forcing
@@ -243,6 +288,10 @@ impl Position{
             self.make_move(m);
             let score = -self.quiescence_search(ply + 1, -beta, -alpha);
             self.undo_move();
+
+            if self.search_aborted {
+                return 0;
+            }
 
             if score > best {
                 best = score;

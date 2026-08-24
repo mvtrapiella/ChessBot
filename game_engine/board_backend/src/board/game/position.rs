@@ -2,6 +2,7 @@ use core::panic;
 use std::collections::HashMap;
 use std::io::stdin;
 use std::println;
+use std::time::Instant;
 
 use crate::board::Color::{Black, White};
 use crate::board::types::{
@@ -26,6 +27,9 @@ pub struct Position{
     pub position_history: Vec<u64>,
     pub moves_counter: u32,
     pub search_path_hashes: Vec<u64>,
+    pub nodes: u64,
+    pub deadline: Option<Instant>,
+    pub search_aborted: bool,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
