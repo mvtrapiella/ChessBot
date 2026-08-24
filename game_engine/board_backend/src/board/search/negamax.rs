@@ -1,9 +1,15 @@
 use crate::board::position::Position;
 use crate::board::types::Move;
 use crate::board::zobric::{Bound, TTEntry};
+use std::time::{Duration, Instant};
 
 const INFINITY: i32 = 2_000_000;
 const CHECK_MATE: i32 = 1_000_000;
+
+pub enum SearchLimit {
+    Depth(u32),
+    TimeBudget(Duration),
+}
 
 impl Position{
     pub fn negamax(&mut self, depth: u32, ply: u32, mut alpha: i32, beta: i32) -> i32{
@@ -111,7 +117,14 @@ impl Position{
         best
     }
 
-    pub fn find_best_move(&mut self, depth: u32) -> Option<Move> {
+    pub fn find_best_move(&mut self, limit: SearchLimit) -> Option<Move> {
+        let depth = match limit {
+            SearchLimit::Depth(d) => d,
+            SearchLimit::TimeBudget(_) => todo!("iterative deepening loop not implemented yet"),
+        };
+
+        let max_time = Duration::from_millis(5000); // 5 seconds
+
         self.search_path_hashes.clear();
 
         let mut legal_moves: Vec<Move> = self.board.all_legal_moves();
@@ -128,6 +141,8 @@ impl Position{
         let beta = INFINITY;
         let mut best_move = None;
         let mut best_score = -INFINITY;
+
+        let time = Instant::now();
 
         for m in legal_moves {
             self.make_move(m);
@@ -154,6 +169,10 @@ impl Position{
             // to stop here. Any *slower* confirmed mate must NOT break early, since a later
             // root move could still deliver a faster one that best_score would prefer.
             if best_score == CHECK_MATE - 1 {
+                break;
+            }
+
+            if time.elapsed() >= max_time {
                 break;
             }
         }

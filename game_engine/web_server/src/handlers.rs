@@ -9,6 +9,7 @@ use uuid::Uuid;
 use board_backend::board::{position::GameStatus::InProgress, state::Board, types::Move};
 use board_backend::board::types::{Color, NO_SQUARE};
 use board_backend::board::position::Position;
+use board_backend::board::negamax::SearchLimit;
 
 use crate::dto::{CreateGameRequest, GameStateDTO, LegalMovesDTO, MoveRequest};
 use crate::error::ApiError;
@@ -58,7 +59,7 @@ pub async fn create_game(
         let mover_color = position.board.side_to_move;
 
         let opening_move = position
-            .find_best_move(payload.depth)
+            .find_best_move(SearchLimit::Depth(payload.depth))
             .expect("The game has not ended so the bot should make a move");
         position.make_move(opening_move);
         position.record_real_move();
@@ -185,7 +186,7 @@ pub async fn make_move(
         let squares_before_bot_move = game.position.board.squares;
         let bot_color = game.position.board.side_to_move;
 
-        let bot_mv: Move = game.position.find_best_move(game.depth).expect("The game has not ended so the bot should make a move");
+        let bot_mv: Move = game.position.find_best_move(SearchLimit::Depth(game.depth)).expect("The game has not ended so the bot should make a move");
         game.position.make_move(bot_mv);
         game.position.record_real_move();
 

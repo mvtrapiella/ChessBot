@@ -9,6 +9,7 @@ use crate::board::types::{
     BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, BLACK_BISHOP, BLACK_KNIGHT,
 };
 use crate::board::zobric::TTEntry;
+use crate::board::negamax::SearchLimit;
 
 use crate::board::state::Board;
 use super::make_move::Action;
@@ -97,7 +98,7 @@ impl Position{
             self.make_move(user_move);
         }
         else{
-            let machine_move = self.find_best_move(depth).expect("There should be a move to do");
+            let machine_move = self.find_best_move(SearchLimit::Depth(depth)).expect("There should be a move to do");
 
             self.make_move(machine_move);
         }
