@@ -33,6 +33,7 @@ export type MoveRequest = {
 export type CreateGameRequest = {
     userColor: ColorDTO
     depth: number
+    maxDifficulty: boolean
 }
 
 // TODO: move to a Vite env var once there's more than one environment to target.

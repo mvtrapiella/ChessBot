@@ -1,6 +1,7 @@
 use std::{collections::HashMap, sync::{Arc, Mutex}};
 
 use board_backend::board::{Color, position::Position};
+use board_backend::board::negamax::SearchLimit;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -21,7 +22,7 @@ pub struct MoveRecord {
 pub struct Game {
     pub position: Position,
     pub user_color: Color,
-    pub depth: u32,
+    pub search_limit: SearchLimit,
     pub move_history: Vec<MoveRecord>,
 }
 

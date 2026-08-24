@@ -104,6 +104,43 @@
     box-shadow: 0 0 0 2px var(--color-brass) inset;
 }
 
+.sectionDisabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+.maxDifficultyButton {
+    padding: var(--space-3) 0;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-ash);
+    background-color: transparent;
+    border: 1px solid var(--color-panel-line);
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0.6;
+    transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.maxDifficultyButton:hover {
+    opacity: 0.85;
+}
+
+.maxDifficultyButtonActive {
+    color: var(--color-ink);
+    background: linear-gradient(180deg, #dcb669, var(--color-brass));
+    border-color: var(--color-brass-deep);
+    opacity: 1;
+}
+
+.maxDifficultyButtonActive:hover {
+    opacity: 1;
+    filter: brightness(1.08);
+}
+
 .playButton {
     padding: var(--space-4) 0;
     font-family: var(--font-body);

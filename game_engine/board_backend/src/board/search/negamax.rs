@@ -6,6 +6,9 @@ use std::time::{Duration, Instant};
 const INFINITY: i32 = 2_000_000;
 const CHECK_MATE: i32 = 1_000_000;
 
+// Copy since a Game needs to hang onto its chosen limit and reuse it for every
+// bot move for the rest of the game, not just the one that created it.
+#[derive(Clone, Copy)]
 pub enum SearchLimit {
     Depth(u32),
     TimeBudget(Duration),
