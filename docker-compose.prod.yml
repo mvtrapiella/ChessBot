@@ -23,6 +23,15 @@ services:
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-webroot:/var/www/certbot
+    # This has to stay `entrypoint`, not `command` -- the image's own default ENTRYPOINT
+    # is `["certbot"]` with no CMD, and Docker concatenates ENTRYPOINT + command rather
+    # than one replacing the other. A `command`-only override would run
+    # `certbot /bin/sh -c "..."` (the script passed as literal args *to* certbot) instead
+    # of actually executing the script. The tradeoff: a one-off `docker compose run certbot
+    # <other-command>` needs an explicit `--entrypoint` override to bypass this (see the
+    # certonly bootstrap step in the README/runbook), since overriding entrypoint here
+    # means `run`'s command otherwise gets silently appended as unused arguments to this
+    # same script instead of replacing it.
     entrypoint: >
       /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done;"
 
