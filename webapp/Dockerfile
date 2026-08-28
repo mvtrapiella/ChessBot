@@ -1,6 +1,12 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
+# Vite only bakes in env vars prefixed VITE_, and only at build time -- this has to be
+# passed as a build arg (--build-arg VITE_VIRTUAL_MACHINE_IP=...) since a running
+# container can't change it after the fact.
+ARG VITE_VIRTUAL_MACHINE_IP
+ENV VITE_VIRTUAL_MACHINE_IP=$VITE_VIRTUAL_MACHINE_IP
+
 COPY package.json package-lock.json ./
 RUN npm install
 

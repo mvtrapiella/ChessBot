@@ -1,0 +1,75 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  BACKEND_IMAGE: ghcr.io/mvtrapiella/chessbot-backend
+  WEBAPP_IMAGE: ghcr.io/mvtrapiella/chessbot-webapp
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Built from the repo root, since web_server depends on its sibling
+      # board_backend/magic_numbers crates via the Cargo workspace.
+      - name: Build and push backend image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: game_engine/web_server/Dockerfile
+          push: true
+          tags: ${{ env.BACKEND_IMAGE }}:latest
+
+      - name: Build and push webapp image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./webapp
+          file: webapp/Dockerfile
+          push: true
+          tags: ${{ env.WEBAPP_IMAGE }}:latest
+          build-args: |
+            VITE_VIRTUAL_MACHINE_IP=${{ secrets.VIRTUAL_MACHINE_IP }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The VM only ever needs this one file -- it pulls prebuilt images, it never
+      # has (or needs) the actual source tree.
+      - name: Copy docker-compose.prod.yml to the VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VIRTUAL_MACHINE_IP }}
+          username: ${{ secrets.VM_SSH_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          source: "docker-compose.prod.yml"
+          target: "~/chessbot"
+
+      - name: Pull latest images and restart
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.VIRTUAL_MACHINE_IP }}
+          username: ${{ secrets.VM_SSH_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script: |
+            echo "VIRTUAL_MACHINE_IP=${{ secrets.VIRTUAL_MACHINE_IP }}" > ~/chessbot/.env
+            cd ~/chessbot
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d

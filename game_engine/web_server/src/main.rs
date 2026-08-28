@@ -1,3 +1,5 @@
+use std::env;
+
 use tokio::net::TcpListener;
 
 use axum::{
@@ -21,14 +23,27 @@ async fn main() {
     // Create the shared application state
     let state = AppState::new();
 
-    // Allow the Vite dev server and the dockerized webapp to call this API from the browser
+    // Allow the Vite dev server and the dockerized webapp to call this API from the browser.
+    // VIRTUAL_MACHINE_IP is set on the deployed container from the VIRTUAL_MACHINE_IP
+    // GitHub environment secret -- see docker-compose.prod.yml and .github/workflows/deploy.yml.
+    // It's absent for local `cargo run`/dev-compose, so that origin is only added when present.
+    let mut allowed_origins = vec![
+        "http://localhost:5173".parse::<HeaderValue>().unwrap(),
+        "http://127.0.0.1:5173".parse::<HeaderValue>().unwrap(),
+        "http://localhost:5175".parse::<HeaderValue>().unwrap(),
+        "http://127.0.0.1:5175".parse::<HeaderValue>().unwrap(),
+    ];
+
+    if let Ok(vm_ip) = env::var("VIRTUAL_MACHINE_IP") {
+        allowed_origins.push(
+            format!("http://{vm_ip}:5173")
+                .parse::<HeaderValue>()
+                .expect("VIRTUAL_MACHINE_IP must be a valid host for a URL"),
+        );
+    }
+
     let cors = CorsLayer::new()
-        .allow_origin([
-            "http://localhost:5173".parse::<HeaderValue>().unwrap(),
-            "http://127.0.0.1:5173".parse::<HeaderValue>().unwrap(),
-            "http://localhost:5175".parse::<HeaderValue>().unwrap(),
-            "http://127.0.0.1:5175".parse::<HeaderValue>().unwrap(),
-        ])
+        .allow_origin(allowed_origins)
         .allow_methods([Method::GET, Method::POST])
         .allow_headers([CONTENT_TYPE]);
 
