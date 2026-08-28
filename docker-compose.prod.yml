@@ -1,16 +1,31 @@
 services:
   backend:
     image: ghcr.io/mvtrapiella/chessbot-backend:latest
-    ports:
-      - "3000:3000"
-    environment:
-      - VIRTUAL_MACHINE_IP=${VIRTUAL_MACHINE_IP}
+    # No published ports -- only reachable internally, via the webapp's nginx reverse
+    # proxy. CORS no longer needs VIRTUAL_MACHINE_IP either, since browser requests to
+    # /api/* are same-origin through nginx now, not a separate host:port.
     restart: unless-stopped
 
   webapp:
     image: ghcr.io/mvtrapiella/chessbot-webapp:latest
     ports:
-      - "5173:80"
+      - "80:80"
+      - "443:443"
     depends_on:
       - backend
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
     restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-webroot:/var/www/certbot
+    entrypoint: >
+      /bin/sh -c "trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot; sleep 12h & wait $${!}; done;"
+
+volumes:
+  certbot-etc:
+  certbot-webroot:
