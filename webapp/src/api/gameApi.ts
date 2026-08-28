@@ -36,9 +36,11 @@ export type CreateGameRequest = {
     maxDifficulty: boolean
 }
 
-// VITE_VIRTUAL_MACHINE_IP is baked in at build time by the GitHub Actions workflow,
-// from the VIRTUAL_MACHINE_IP repository secret -- see .github/workflows/deploy.yml.
-const API_BASE_URL = `http://${import.meta.env.VITE_VIRTUAL_MACHINE_IP}:3000`
+// Relative, not an absolute host:port -- always same-origin with whatever served the
+// page itself. In production and the dev-compose setup, nginx reverse-proxies /api/*
+// to the backend container (see webapp/nginx.https.conf); for plain `npm run dev`,
+// Vite's own dev-server proxy does the equivalent (see vite.config.ts).
+const API_BASE_URL = '/api'
 
 async function parseResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {

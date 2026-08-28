@@ -8,4 +8,15 @@ export default defineConfig({
     react(),
     babel({ presets: [reactCompilerPreset()] })
   ],
+  server: {
+    // gameApi.ts calls relative /api paths so it works unchanged behind nginx's
+    // reverse proxy in production -- this replicates that for `npm run dev`, where
+    // there's no nginx and the backend is just `cargo run` on its own port.
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
 })

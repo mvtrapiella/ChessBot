@@ -42,8 +42,6 @@ jobs:
           file: webapp/Dockerfile
           push: true
           tags: ${{ env.WEBAPP_IMAGE }}:latest
-          build-args: |
-            VITE_VIRTUAL_MACHINE_IP=${{ secrets.VIRTUAL_MACHINE_IP }}
 
   deploy:
     needs: build-and-push
@@ -69,7 +67,6 @@ jobs:
           username: ${{ secrets.VM_SSH_USER }}
           key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
           script: |
-            echo "VIRTUAL_MACHINE_IP=${{ secrets.VIRTUAL_MACHINE_IP }}" > ~/chessbot/.env
             cd ~/chessbot
             docker compose -f docker-compose.prod.yml pull
             docker compose -f docker-compose.prod.yml up -d
