@@ -1,0 +1,16 @@
+services:
+  backend:
+    image: ghcr.io/mvtrapiella/chessbot-backend:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - VIRTUAL_MACHINE_IP=${VIRTUAL_MACHINE_IP}
+    restart: unless-stopped
+
+  webapp:
+    image: ghcr.io/mvtrapiella/chessbot-webapp:latest
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    restart: unless-stopped

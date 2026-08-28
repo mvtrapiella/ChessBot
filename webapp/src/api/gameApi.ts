@@ -36,8 +36,9 @@ export type CreateGameRequest = {
     maxDifficulty: boolean
 }
 
-// TODO: move to a Vite env var once there's more than one environment to target.
-const API_BASE_URL = 'http://127.0.0.1:3000'
+// VITE_VIRTUAL_MACHINE_IP is baked in at build time by the GitHub Actions workflow,
+// from the VIRTUAL_MACHINE_IP repository secret -- see .github/workflows/deploy.yml.
+const API_BASE_URL = `http://${import.meta.env.VITE_VIRTUAL_MACHINE_IP}:3000`
 
 async function parseResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
