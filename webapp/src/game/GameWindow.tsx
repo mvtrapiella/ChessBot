@@ -202,9 +202,10 @@ function GameWindow() {
             return
         }
 
+        const canSelect =
+            pieceColorOf(game.squares[index]) === game.userColor && game.sideToMove === game.userColor
+
         if (selectedSquare === null) {
-            const canSelect =
-                pieceColorOf(game.squares[index]) === game.userColor && game.sideToMove === game.userColor
             if (canSelect) {
                 selectSquare(index)
             }
@@ -213,6 +214,11 @@ function GameWindow() {
 
         if (index === selectedSquare) {
             deselect()
+            return
+        }
+
+        if (canSelect) {
+            selectSquare(index)
             return
         }
 
