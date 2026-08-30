@@ -17,4 +17,11 @@
         flex-direction: column;
         align-items: center;
     }
+
+    /* Tighter than the desktop clamp -- on a phone this padding comes directly out of
+       --board-size's own "100%" term, so a few reclaimed pixels here make a real
+       difference to how big the board (and everything sized to match it) can be. */
+    .page {
+        padding: var(--space-4) var(--space-3);
+    }
 }

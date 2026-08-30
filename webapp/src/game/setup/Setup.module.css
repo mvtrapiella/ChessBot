@@ -168,3 +168,34 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* These controls were fixed-pixel-sized regardless of screen size, so on a phone --
+   where the panel already shrinks to match a much smaller board (see MainWindow.module.css)
+   -- they stayed exactly as large as on desktop instead of shrinking along with it. */
+@media (max-width: 720px) {
+    .depthSpinnerButton {
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+    }
+
+    .depthSpinnerInput {
+        width: 44px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+
+    .colorTile {
+        max-width: 64px;
+    }
+
+    .maxDifficultyButton {
+        padding: var(--space-2) 0;
+        font-size: 0.75rem;
+    }
+
+    .playButton {
+        padding: var(--space-3) 0;
+        font-size: 0.9rem;
+    }
+}
