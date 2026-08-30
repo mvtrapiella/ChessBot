@@ -38,6 +38,31 @@
     background-color: #d97c5c;
 }
 
+.cellChecked {
+    background-color: #e8a58d;
+}
+
+.cellFlash::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: #d97c5c;
+    opacity: 0;
+    animation: illegalFlash 0.75s ease-in-out 1;
+}
+
+@keyframes illegalFlash {
+    0%, 100% {
+        opacity: 0;
+    }
+    16.6%, 50%, 83.3% {
+        opacity: 0.6;
+    }
+    33.3%, 66.6% {
+        opacity: 0;
+    }
+}
+
 .cellPiece {
     width: 80%;
     height: 80%;

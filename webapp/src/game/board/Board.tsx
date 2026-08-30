@@ -9,6 +9,8 @@ type BoardProps = {
     squares: number[]
     selectedSquare: number | null
     highlightedSquares?: number[]
+    checkedSquare?: number | null
+    flashSquare?: number | null
     perspective?: Perspective
     onSquareClick: (index: number) => void
     // Optional: enables mouse drag-to-move. Called on drop with the origin
@@ -104,6 +106,8 @@ function Board({
     squares,
     selectedSquare,
     highlightedSquares = [],
+    checkedSquare = null,
+    flashSquare = null,
     perspective = 'white',
     onSquareClick,
     onPieceDrop,
@@ -274,6 +278,8 @@ function Board({
                         isSelected={selectedSquare === squareIndex}
                         isHighlighted={highlightedSquares.includes(squareIndex)}
                         isMarked={markedSquares.has(squareIndex)}
+                        isChecked={checkedSquare === squareIndex}
+                        isIllegalFlash={flashSquare === squareIndex}
                         squareIndex={squareIndex}
                         animateFrom={animateFrom}
                         onClick={() => handleClick(squareIndex)}

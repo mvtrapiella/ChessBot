@@ -23,6 +23,10 @@ const WHITE_PAWN = 1
 const BLACK_PAWN = 7
 const WHITE_QUEEN = 5
 const BLACK_QUEEN = 11
+const WHITE_KING = 6
+const BLACK_KING = 12
+
+const ILLEGAL_MOVE_FLASH_MS = 750
 
 function pieceColorOf(piece: number): ColorDTO | null {
     if (piece === 0) return null
@@ -102,6 +106,7 @@ function GameWindow() {
     const [viewIndex, setViewIndex] = useState(-1)
     const [selectedSquare, setSelectedSquare] = useState<number | null>(null)
     const [highlightedSquares, setHighlightedSquares] = useState<number[]>([])
+    const [flashSquare, setFlashSquare] = useState<number | null>(null)
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
     const [surrendered, setSurrendered] = useState(false)
@@ -137,6 +142,13 @@ function GameWindow() {
             : viewIndex === -1
               ? INITIAL_SQUARES
               : game.moveHistory[viewIndex].squares
+
+    // Only meaningful for the live position -- inCheck describes game.squares, not
+    // whatever historical position the move-history scrubber might be showing.
+    const checkedSquare =
+        isLive && game && game.inCheck
+            ? game.squares.indexOf(game.sideToMove === 'WHITE' ? WHITE_KING : BLACK_KING)
+            : null
 
     const deselect = () => {
         setSelectedSquare(null)
@@ -190,10 +202,13 @@ function GameWindow() {
                 setGame(data)
                 setViewIndex(data.moveHistory.length - 1)
             })
-            .catch((err: Error) => {
-                setError(err.message)
+            .catch(() => {
                 setGame(previousGame)
                 setViewIndex(previousGame.moveHistory.length - 1)
+                setFlashSquare(origin)
+                setTimeout(() => {
+                    setFlashSquare((current) => (current === origin ? null : current))
+                }, ILLEGAL_MOVE_FLASH_MS)
             })
     }
 
@@ -262,6 +277,8 @@ function GameWindow() {
                             squares={displaySquares}
                             selectedSquare={isLive ? selectedSquare : null}
                             highlightedSquares={isLive ? highlightedSquares : []}
+                            checkedSquare={checkedSquare}
+                            flashSquare={isLive ? flashSquare : null}
                             perspective={game.userColor === 'BLACK' ? 'black' : 'white'}
                             onSquareClick={handleSquareClick}
                             onPieceDrop={isLive && game.status === 'IN_PROGRESS' ? attemptMove : undefined}
