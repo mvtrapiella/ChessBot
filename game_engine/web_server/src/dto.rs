@@ -105,6 +105,7 @@ pub struct GameStateDTO {
     pub status: GameStatusDTO,
     pub draw_reason: Option<DrawReasonDTO>,
     pub move_history: Vec<MoveRecordDTO>,
+    pub in_check: bool,
 }
 
 impl GameStateDTO {
@@ -138,6 +139,7 @@ impl GameStateDTO {
             status,
             draw_reason,
             move_history: move_history.iter().map(MoveRecordDTO::from).collect(),
+            in_check: position.board.is_in_check(position.board.side_to_move),
         }
     }
 }

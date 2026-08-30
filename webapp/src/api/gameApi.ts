@@ -22,6 +22,7 @@ export type GameStateDTO = {
     status: GameStatusDTO
     drawReason: DrawReasonDTO | null
     moveHistory: MoveRecordDTO[]
+    inCheck: boolean
 }
 
 export type MoveRequest = {

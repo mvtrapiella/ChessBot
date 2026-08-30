@@ -8,6 +8,8 @@ type CellProps = {
     isSelected: boolean
     isHighlighted: boolean
     isMarked: boolean
+    isChecked: boolean
+    isIllegalFlash: boolean
     squareIndex: number
     // Set only on the destination square of a just-made move, in grid cells
     // (not pixels), so the piece can FLIP-animate in from where it came.
@@ -23,6 +25,8 @@ function Cell({
     isSelected,
     isHighlighted,
     isMarked,
+    isChecked,
+    isIllegalFlash,
     squareIndex,
     animateFrom,
     onClick,
@@ -56,6 +60,8 @@ function Cell({
         isLight ? styles.cellLight : styles.cellDark,
         isSelected ? styles.cellSelected : '',
         isMarked ? styles.cellMarked : '',
+        isChecked ? styles.cellChecked : '',
+        isIllegalFlash ? styles.cellFlash : '',
     ].filter(Boolean).join(' ')
 
     return (
