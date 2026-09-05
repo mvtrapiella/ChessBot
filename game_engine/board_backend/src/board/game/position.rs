@@ -15,11 +15,13 @@ use crate::board::negamax::SearchLimit;
 use crate::board::state::Board;
 use super::make_move::Action;
 
+// Max size of the TT -> (65,536 entries)
+pub const TT_SIZE: usize = 1 << 16;
 
 pub struct Position{
     pub board: Board,
     pub history: Vec<Action>,
-    pub transposition_table: HashMap<u64, TTEntry>,
+    pub transposition_table: Vec<Option<TTEntry>>,
     // Hashes of positions actually reached during the real game (pushed once per real
     // move in game_play/user_make_move) -- kept separate from transposition_table, which
     // gets overwritten with unrelated hypothetical positions explored during search, and
