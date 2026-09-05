@@ -1,5 +1,4 @@
 use core::panic;
-use std::collections::HashMap;
 use std::io::stdin;
 use std::println;
 use std::time::Instant;

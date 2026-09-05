@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::time::Duration;
 
 use axum::{
@@ -51,7 +50,7 @@ pub async fn create_game(
     let mut position = Position {
         board,
         history: Vec::new(),
-        transposition_table: HashMap::new(),
+        transposition_table: Vec::new(),
         position_history: Vec::new(),
         moves_counter: 0,
         search_path_hashes: Vec::new(),

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use crate::board::polyglot_hash::polyglot_hash;
 use crate::board::position::Position;
 use crate::board::state::Board;
@@ -25,7 +23,7 @@ fn starting_position() -> Position {
     Position {
         board,
         history: Vec::new(),
-        transposition_table: HashMap::new(),
+        transposition_table: Vec::new(),
         position_history: Vec::new(),
         moves_counter: 0,
         search_path_hashes: Vec::new(),
