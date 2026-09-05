@@ -92,14 +92,7 @@ fn loaded_book() -> &'static [BookEntry] {
 
 // The highest-weighted known reply to the current position, if the book covers it and
 // we're still within the opening. Always re-validated against the position's own actual
-// legal moves before being trusted -- a hash match alone doesn't rule out a collision or
-// a move this engine can't represent (see the castling note below).
-//
-// Known gap: Polyglot encodes castling as the king "capturing" its own rook (e.g. white
-// kingside castle is stored as e1h1), which doesn't match this engine's own castling
-// representation (king moving straight to g1/c1/g8/c8). A book-recommended castle will
-// therefore fail the legal-move check below and simply be skipped, falling through to
-// normal search -- safe, just means the book is never used specifically for castling.
+// legal moves before being trusted -- a hash match alone doesn't rule out a collision.
 pub fn book_move(board: &Board, moves_counter: u32) -> Option<Move> {
     if moves_counter >= MAX_BOOK_PLIES {
         return None;
@@ -116,7 +109,10 @@ pub fn book_move(board: &Board, moves_counter: u32) -> Option<Move> {
     board.all_legal_moves().contains(&mv).then_some(mv)
 }
 
-fn to_move(entry: &BookEntry, side_to_move: Color) -> Option<Move> {
+// pub(crate) rather than private so tests can exercise the castling remap directly with
+// constructed entries, instead of depending on the embedded book happening to recommend
+// a castle for some reachable position.
+pub(crate) fn to_move(entry: &BookEntry, side_to_move: Color) -> Option<Move> {
     let promotion = match entry.promotion {
         0 => None,
         1 => Some(if side_to_move == Color::White { WHITE_KNIGHT } else { BLACK_KNIGHT }),
@@ -126,5 +122,24 @@ fn to_move(entry: &BookEntry, side_to_move: Color) -> Option<Move> {
         _ => return None,
     };
 
-    Some(Move { origin: entry.origin, destination: entry.destination, promotion })
+    let destination = remap_castling_destination(entry.origin, entry.destination);
+
+    Some(Move { origin: entry.origin, destination, promotion })
+}
+
+// Polyglot encodes castling as the king "capturing" its own rook (e.g. white kingside
+// castle is stored as e1h1) rather than the king moving straight to g1/c1/g8/c8 like this
+// engine represents it. These four origin/destination pairs are unambiguous: no other
+// piece can ever legally move from a king's home square straight onto its own rook's home
+// square, so remapping them unconditionally (without checking whose move it is or what's
+// actually on the board) is safe -- and if castling isn't actually legal in this position
+// for any reason, the remapped move still has to pass the caller's all_legal_moves() check.
+fn remap_castling_destination(origin: u8, destination: u8) -> u8 {
+    match (origin, destination) {
+        (4, 7) => 6,    // white kingside: e1h1 -> e1g1
+        (4, 0) => 2,    // white queenside: e1a1 -> e1c1
+        (60, 63) => 62, // black kingside: e8h8 -> e8g8
+        (60, 56) => 58, // black queenside: e8a8 -> e8c8
+        _ => destination,
+    }
 }

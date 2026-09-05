@@ -37,6 +37,27 @@ fn starting_position() -> Position {
     Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false }
 }
 
+fn play(moves: &[&str]) -> Position {
+    let mut position = starting_position();
+    for mv in moves {
+        position.apply_move_str(mv).expect("test move should be legal");
+    }
+    position
+}
+
+#[test]
+fn find_best_move_remaps_a_book_recommended_castle_to_a_legal_move() {
+    // 1. e4 c5 2. Nf3 d6 3. Bb5 Nc6 -- gm2001.bin's top-weighted reply here is White
+    // kingside castling, stored Polyglot-style as e1h1 (king "takes" its own rook).
+    // Without the remap this would fail the legal-move check and silently fall through
+    // to search instead.
+    let mut pos = play(&["e2e4", "c7c5", "g1f3", "d7d6", "f1b5", "b8c6"]);
+
+    let best = pos.find_best_move(SearchLimit::Depth(1));
+
+    assert_eq!(best, Some(Move { origin: 4, destination: 6, promotion: None }));
+}
+
 #[test]
 fn find_best_move_plays_the_book_move_from_the_starting_position() {
     // e2e4 is the highest-weighted reply to the starting position in the embedded
