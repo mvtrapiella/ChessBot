@@ -16,6 +16,7 @@ pub use game::make_move;
 pub use search::evaluate;
 pub use search::negamax;
 pub use search::opening_book;
+pub use search::polyglot_hash;
 pub use search::zobric;
 
 // Re-export the main items to make imports much cleaner in main.rs

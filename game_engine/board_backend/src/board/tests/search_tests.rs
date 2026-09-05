@@ -17,6 +17,39 @@ fn position_with(pieces: &[(u8, u8)], side_to_move: Color) -> Position {
     Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false }
 }
 
+fn starting_position() -> Position {
+    let mut board = Board {
+        squares: [0; 64],
+        piece_bitboards: [0; 12],
+        white_pieces: 0,
+        black_pieces: 0,
+        all_pieces: 0,
+        side_to_move: Color::White,
+        castling_rights: 15,
+        en_passant_square: crate::board::types::NO_SQUARE,
+        halfmove_clock: 0,
+        zobrian_hash: 0,
+    };
+
+    board.initialize_board();
+    board.update_bitboards();
+
+    Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false }
+}
+
+#[test]
+fn find_best_move_plays_the_book_move_from_the_starting_position() {
+    // e2e4 is the highest-weighted reply to the starting position in the embedded
+    // gm2001.bin book (independently confirmed via python-chess's own book reader) --
+    // find_best_move should return it directly from the book, without needing to search
+    // at all, regardless of how high a depth is requested.
+    let mut pos = starting_position();
+
+    let best = pos.find_best_move(SearchLimit::Depth(1));
+
+    assert_eq!(best, Some(Move { origin: 12, destination: 28, promotion: None }));
+}
+
 #[test]
 fn finds_mate_in_one() {
     // White king a3, rooks a7 + b1, black king h8, white to move.

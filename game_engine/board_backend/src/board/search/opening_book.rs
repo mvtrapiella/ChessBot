@@ -1,8 +1,19 @@
 use std::fs;
 use std::io;
 use std::path::Path;
+use std::sync::OnceLock;
+
+use crate::board::polyglot_hash::polyglot_hash;
+use crate::board::state::Board;
+use crate::board::types::{
+    Color, Move, WHITE_KNIGHT, WHITE_BISHOP, WHITE_ROOK, WHITE_QUEEN,
+    BLACK_KNIGHT, BLACK_BISHOP, BLACK_ROOK, BLACK_QUEEN,
+};
 
 const RECORD_SIZE: usize = 16;
+// Plies, not full moves -- 20 plies is 10 moves each side. Book coverage naturally
+// runs out before this in most lines anyway; this is just a backstop.
+const MAX_BOOK_PLIES: u32 = 20;
 
 // One raw entry as stored in a Polyglot .bin book, transcribed with minimal
 // interpretation. `promotion` is kept as Polyglot's own raw code rather than
@@ -66,4 +77,54 @@ fn parse_record(record: &[u8]) -> BookEntry {
     let destination = (to_rank * 8 + to_file) as u8;
 
     BookEntry { key, origin, destination, promotion, weight }
+}
+
+static BOOK: OnceLock<Vec<BookEntry>> = OnceLock::new();
+
+// Embedded at compile time -- no runtime file path to configure or ship separately,
+// and the Docker build already copies this whole crate directory into its build context.
+fn loaded_book() -> &'static [BookEntry] {
+    BOOK.get_or_init(|| {
+        let bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/books/gm2001.bin"));
+        parse_book(bytes).expect("embedded gm2001.bin should be a well-formed Polyglot book")
+    })
+}
+
+// The highest-weighted known reply to the current position, if the book covers it and
+// we're still within the opening. Always re-validated against the position's own actual
+// legal moves before being trusted -- a hash match alone doesn't rule out a collision or
+// a move this engine can't represent (see the castling note below).
+//
+// Known gap: Polyglot encodes castling as the king "capturing" its own rook (e.g. white
+// kingside castle is stored as e1h1), which doesn't match this engine's own castling
+// representation (king moving straight to g1/c1/g8/c8). A book-recommended castle will
+// therefore fail the legal-move check below and simply be skipped, falling through to
+// normal search -- safe, just means the book is never used specifically for castling.
+pub fn book_move(board: &Board, moves_counter: u32) -> Option<Move> {
+    if moves_counter >= MAX_BOOK_PLIES {
+        return None;
+    }
+
+    let hash = polyglot_hash(board);
+    let best_entry = loaded_book()
+        .iter()
+        .filter(|entry| entry.key == hash)
+        .max_by_key(|entry| entry.weight)?;
+
+    let mv = to_move(best_entry, board.side_to_move)?;
+
+    board.all_legal_moves().contains(&mv).then_some(mv)
+}
+
+fn to_move(entry: &BookEntry, side_to_move: Color) -> Option<Move> {
+    let promotion = match entry.promotion {
+        0 => None,
+        1 => Some(if side_to_move == Color::White { WHITE_KNIGHT } else { BLACK_KNIGHT }),
+        2 => Some(if side_to_move == Color::White { WHITE_BISHOP } else { BLACK_BISHOP }),
+        3 => Some(if side_to_move == Color::White { WHITE_ROOK } else { BLACK_ROOK }),
+        4 => Some(if side_to_move == Color::White { WHITE_QUEEN } else { BLACK_QUEEN }),
+        _ => return None,
+    };
+
+    Some(Move { origin: entry.origin, destination: entry.destination, promotion })
 }
