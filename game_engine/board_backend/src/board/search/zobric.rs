@@ -1,5 +1,3 @@
-use core::hash;
-
 use crate::board::{Board, Color::Black, make_move::Action, position::{Position, TT_SIZE}, types::{BLACK_BISHOP, BLACK_KING, BLACK_KNIGHT, BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, Move, NO_SQUARE, WHITE_BISHOP, WHITE_KING, WHITE_KNIGHT, WHITE_PAWN, WHITE_QUEEN, WHITE_ROOK}};
 
 pub const PIECE_SQUARE_KEYS: [[u64; 64]; 12] = [

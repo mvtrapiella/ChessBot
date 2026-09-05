@@ -1,4 +1,4 @@
-use crate::board::position::Position;
+use crate::board::position::{Position, TT_SIZE};
 use crate::board::state::Board;
 use crate::board::types::{
     Move, EMPTY, WHITE_KING, WHITE_ROOK, WHITE_PAWN, WHITE_QUEEN, BLACK_ROOK, BLACK_PAWN,
@@ -11,7 +11,7 @@ fn position_with(pieces: &[(u8, u8)]) -> Position {
         place(&mut board, square, piece);
     }
     board.update_bitboards();
-    Position { board, history: Vec::new(), transposition_table: Vec::new(), position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false }
+    Position { board, history: Vec::new(), transposition_table: vec![None; TT_SIZE], position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false }
 }
 
 #[test]
