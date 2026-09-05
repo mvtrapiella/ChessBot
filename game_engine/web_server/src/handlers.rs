@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::time::Duration;
 
 use axum::{
@@ -9,7 +8,7 @@ use uuid::Uuid;
 
 use board_backend::board::{position::GameStatus::InProgress, state::Board, types::Move};
 use board_backend::board::types::{Color, NO_SQUARE};
-use board_backend::board::position::Position;
+use board_backend::board::position::{Position, TT_SIZE};
 use board_backend::board::negamax::SearchLimit;
 
 use crate::dto::{CreateGameRequest, GameStateDTO, LegalMovesDTO, MoveRequest};
@@ -51,7 +50,7 @@ pub async fn create_game(
     let mut position = Position {
         board,
         history: Vec::new(),
-        transposition_table: HashMap::new(),
+        transposition_table: vec![None; TT_SIZE],
         position_history: Vec::new(),
         moves_counter: 0,
         search_path_hashes: Vec::new(),

@@ -61,7 +61,7 @@ impl Position{
         // Terminal (checkmate/stalemate) and depth==0 leaves are never stored below (neither
         // explores any moves, so there's no best_move to record), so a hit here can never be
         // mistaken for one of those -- it's always a real, previously-completed search.
-        if let Some(entry) = self.transposition_table.get(&hash) {
+        if let Some(entry) = self.tt_probe(hash) {
             if entry.depth >= depth {
                 match entry.bound {
                     Bound::Exact => return entry.score,
@@ -138,7 +138,8 @@ impl Position{
             Bound::Exact
         };
 
-        self.transposition_table.insert(hash, TTEntry {
+        self.tt_store(hash, TTEntry {
+            key: hash,
             depth,
             bound,
             score: best,

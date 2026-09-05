@@ -1,10 +1,9 @@
 // src/main.rs
-use std::collections::HashMap;
 use std::io::stdin;
 
 use board_backend::board::state::Board;
 use board_backend::board::types::{Color, NO_SQUARE};
-use board_backend::board::position::Position;
+use board_backend::board::position::{Position, TT_SIZE};
 
 fn ask_for_depth() -> u32 {
     loop {
@@ -41,7 +40,7 @@ fn main() {
     board.initialize_board();
     board.update_bitboards();
 
-    let mut position = Position { board, history: Vec::new(), transposition_table: HashMap::new(), position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false };
+    let mut position = Position { board, history: Vec::new(), transposition_table: vec![None; TT_SIZE], position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false };
     
     let depth = ask_for_depth();
     position.game_play(depth);

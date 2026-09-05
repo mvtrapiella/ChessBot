@@ -6,4 +6,3 @@ mod search_tests;
 mod opening_book_tests;
 mod polyglot_hash_tests;
 mod performance;
-

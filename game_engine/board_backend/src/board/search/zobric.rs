@@ -1,4 +1,4 @@
-use crate::board::{Board, Color::Black, make_move::Action, types::{BLACK_BISHOP, BLACK_KING, BLACK_KNIGHT, BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, Move, NO_SQUARE, WHITE_BISHOP, WHITE_KING, WHITE_KNIGHT, WHITE_PAWN, WHITE_QUEEN, WHITE_ROOK}};
+use crate::board::{Board, Color::Black, make_move::Action, position::{Position, TT_SIZE}, types::{BLACK_BISHOP, BLACK_KING, BLACK_KNIGHT, BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, Move, NO_SQUARE, WHITE_BISHOP, WHITE_KING, WHITE_KNIGHT, WHITE_PAWN, WHITE_QUEEN, WHITE_ROOK}};
 
 pub const PIECE_SQUARE_KEYS: [[u64; 64]; 12] = [
   [0xe4697ccaa7322bdf, 0x5a9ebf660b1d5848, 0xb99bcc514aa470f8, 0x4c0e58abc3000619, 
@@ -234,6 +234,7 @@ pub enum Bound {
 
 #[derive(Clone, Copy)]
 pub struct TTEntry {
+    pub key: u64,
     // The depth to which we have already explored the position (it has to be >= of the depth we want to explore)
     pub depth: u32,
     pub bound: Bound,
@@ -241,6 +242,38 @@ pub struct TTEntry {
     pub score: i32,
     // The move done
     pub best_move: Move,
+}
+
+impl Position {
+  fn tt_index(hash: u64) -> usize {
+      (hash as usize) & (TT_SIZE - 1)
+  }
+
+  pub fn tt_probe(&self, hash: u64) -> Option<TTEntry> {
+      let index = Self::tt_index(hash);
+      let entry = self.transposition_table[index];
+      match entry {
+          Some(entry) if entry.key == hash => Some(entry),
+          _ => None,
+      }
+  }
+
+  pub fn tt_store(&mut self, hash: u64, entry: TTEntry) {
+      let index = Self::tt_index(hash);
+      let prev_entry = self.transposition_table[index];
+
+      let should_replace = match prev_entry {
+          None => true,
+          Some(prev_entry) if prev_entry.key != hash => true,
+          Some(prev_entry) if entry.depth >= prev_entry.depth => true,
+          _ => false,
+
+      };
+
+      if should_replace {
+        self.transposition_table[index] = Some(entry);
+      }
+  }
 }
 
 impl Board{
