@@ -1,3 +1,4 @@
+use crate::board::opening_book;
 use crate::board::position::Position;
 use crate::board::types::Move;
 use crate::board::zobric::{Bound, TTEntry};
@@ -202,6 +203,10 @@ impl Position{
     }
 
     pub fn find_best_move(&mut self, limit: SearchLimit) -> Option<Move> {
+        if let Some(mv) = opening_book::book_move(&self.board, self.moves_counter) {
+            return Some(mv);
+        }
+
         self.search_path_hashes.clear();
         self.nodes = 0;
         self.search_aborted = false;
