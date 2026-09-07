@@ -5,4 +5,5 @@ mod make_move_tests;
 mod search_tests;
 mod opening_book_tests;
 mod polyglot_hash_tests;
+mod zobric_tests;
 mod performance;

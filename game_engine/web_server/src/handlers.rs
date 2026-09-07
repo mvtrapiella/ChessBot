@@ -8,7 +8,7 @@ use uuid::Uuid;
 
 use board_backend::board::{position::GameStatus::InProgress, state::Board, types::Move};
 use board_backend::board::types::{Color, NO_SQUARE};
-use board_backend::board::position::{Position, TT_SIZE};
+use board_backend::board::position::Position;
 use board_backend::board::negamax::SearchLimit;
 
 use crate::dto::{CreateGameRequest, GameStateDTO, LegalMovesDTO, MoveRequest};
@@ -47,17 +47,7 @@ pub async fn create_game(
     board.initialize_board();
     board.update_bitboards();
 
-    let mut position = Position {
-        board,
-        history: Vec::new(),
-        transposition_table: vec![None; TT_SIZE],
-        position_history: Vec::new(),
-        moves_counter: 0,
-        search_path_hashes: Vec::new(),
-        nodes: 0,
-        deadline: None,
-        search_aborted: false,
-    };
+    let mut position = Position::new(board);
     position.position_history.push(position.board.zobrian_hash);
 
     let game_id = Uuid::new_v4();

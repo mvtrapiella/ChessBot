@@ -1,4 +1,4 @@
-use crate::board::position::{Position, TT_SIZE};
+use crate::board::position::Position;
 use crate::board::negamax::SearchLimit;
 use crate::board::state::Board;
 use crate::board::types::{
@@ -13,7 +13,7 @@ fn position_with(pieces: &[(u8, u8)], side_to_move: Color) -> Position {
     }
     board.side_to_move = side_to_move;
     board.update_bitboards();
-    Position { board, history: Vec::new(), transposition_table: vec![None; TT_SIZE], position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false }
+    Position::new(board)
 }
 
 fn starting_position() -> Position {
@@ -33,7 +33,7 @@ fn starting_position() -> Position {
     board.initialize_board();
     board.update_bitboards();
 
-    Position { board, history: Vec::new(), transposition_table: vec![None; TT_SIZE], position_history: Vec::new(), moves_counter: 0, search_path_hashes: Vec::new(), nodes: 0, deadline: None, search_aborted: false }
+    Position::new(board)
 }
 
 fn play(moves: &[&str]) -> Position {
@@ -116,4 +116,69 @@ fn prefers_a_free_capture_over_a_quiet_move() {
     let best = pos.find_best_move(SearchLimit::Depth(2));
 
     assert_eq!(best, Some(Move { origin: 27, destination: 63, promotion: None }));
+}
+
+#[test]
+fn prefers_a_free_capture_over_a_quiet_move_at_greater_depth() {
+    let mut pos = position_with(
+        &[(4, WHITE_KING), (27, WHITE_QUEEN), (8, WHITE_PAWN), (56, BLACK_KING), (63, BLACK_ROOK)],
+        Color::White,
+    );
+
+    let best = pos.find_best_move(SearchLimit::Depth(4));
+
+    assert_eq!(best, Some(Move { origin: 27, destination: 63, promotion: None }));
+}
+
+#[test]
+fn order_moves_at_node_puts_tt_move_first_even_with_the_worst_score() {
+    let mut pos = position_with(&[(4, WHITE_KING), (56, BLACK_KING)], Color::White);
+    let mut moves = pos.board.all_legal_moves();
+    assert!(moves.len() > 1);
+
+    let tt_move = moves[0];
+    for m in &moves {
+        if *m != tt_move {
+            pos.history_table[m.origin as usize][m.destination as usize] = 1000;
+        }
+    }
+
+    pos.order_moves_at_node(&mut moves, 0, Some(tt_move));
+
+    assert_eq!(moves[0], tt_move);
+}
+
+#[test]
+fn order_moves_at_node_ranks_killers_above_plain_quiet_moves() {
+    let mut pos = position_with(&[(4, WHITE_KING), (56, BLACK_KING)], Color::White);
+    let mut moves = pos.board.all_legal_moves();
+    assert!(moves.len() >= 2);
+
+    let killer = moves[0];
+    let other = moves[1];
+    pos.killer_moves[3][0] = Some(killer);
+
+    pos.order_moves_at_node(&mut moves, 3, None);
+
+    let killer_pos = moves.iter().position(|m| *m == killer).unwrap();
+    let other_pos = moves.iter().position(|m| *m == other).unwrap();
+    assert!(killer_pos < other_pos);
+}
+
+#[test]
+fn order_moves_at_node_ranks_higher_history_above_lower_history() {
+    let mut pos = position_with(&[(4, WHITE_KING), (56, BLACK_KING)], Color::White);
+    let mut moves = pos.board.all_legal_moves();
+    assert!(moves.len() >= 2);
+
+    let better = moves[0];
+    let worse = moves[1];
+    pos.history_table[better.origin as usize][better.destination as usize] = 500;
+    pos.history_table[worse.origin as usize][worse.destination as usize] = 10;
+
+    pos.order_moves_at_node(&mut moves, 0, None);
+
+    let better_pos = moves.iter().position(|m| *m == better).unwrap();
+    let worse_pos = moves.iter().position(|m| *m == worse).unwrap();
+    assert!(better_pos < worse_pos);
 }

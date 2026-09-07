@@ -1,7 +1,8 @@
 use crate::board::opening_book;
 use crate::board::position::Position;
 use crate::board::types::Move;
-use crate::board::zobric::{Bound, TTEntry};
+use crate::board::zobric::{Bound, TTEntry, MAX_PLY};
+use std::cmp::Reverse;
 use std::time::{Duration, Instant};
 
 const INFINITY: i32 = 2_000_000;
@@ -61,7 +62,8 @@ impl Position{
         // Terminal (checkmate/stalemate) and depth==0 leaves are never stored below (neither
         // explores any moves, so there's no best_move to record), so a hit here can never be
         // mistaken for one of those -- it's always a real, previously-completed search.
-        if let Some(entry) = self.tt_probe(hash) {
+        let tt_hit = self.tt_probe(hash);
+        if let Some(entry) = tt_hit {
             if entry.depth >= depth {
                 match entry.bound {
                     Bound::Exact => return entry.score,
@@ -100,12 +102,15 @@ impl Position{
             return self.board.evaluate(self.moves_counter);
         }
 
-        self.order_moves(&mut legal_moves);
+        let tt_move = tt_hit.map(|entry| entry.best_move);
+        self.order_moves_at_node(&mut legal_moves, ply, tt_move);
 
         let mut best = -INFINITY;
         let mut best_move: Option<Move> = None;
 
         for m in legal_moves {
+            let is_quiet = !self.board.is_capture(&m) && !self.board.is_promotion(&m);
+
             self.make_move(m);
             self.search_path_hashes.push(self.board.zobrian_hash);
             let score = -self.negamax(depth - 1, ply + 1, -beta, -alpha);
@@ -124,6 +129,13 @@ impl Position{
                 alpha = best;
             }
             if alpha >= beta {
+                if is_quiet {
+                    self.record_killer(ply, m);
+
+                    let bonus = (depth.min(64) as i32).pow(2);
+                    let (o, d) = (m.origin as usize, m.destination as usize);
+                    self.history_table[o][d] = self.history_table[o][d].saturating_add(bonus);
+                }
                 break;
             }
         }
@@ -158,7 +170,8 @@ impl Position{
         }
 
         // Apply ordering
-        self.order_moves(&mut legal_moves);
+        let tt_move = self.tt_probe(self.board.zobrian_hash).map(|entry| entry.best_move);
+        self.order_moves_at_node(&mut legal_moves, 0, tt_move);
 
 
         let mut alpha = -INFINITY;
@@ -209,6 +222,7 @@ impl Position{
         }
 
         self.search_path_hashes.clear();
+        self.killer_moves = [[None; 2]; MAX_PLY];
         self.nodes = 0;
         self.search_aborted = false;
 
@@ -323,6 +337,38 @@ impl Position{
         return true;
     }
 
+
+    pub fn order_moves_at_node(&self, moves: &mut [Move], ply: u32, tt_move: Option<Move>) {
+        let ply_index = (ply as usize).min(MAX_PLY - 1);
+        let killers = self.killer_moves[ply_index];
+
+        moves.sort_unstable_by_key(|mv| Reverse(self.order_key(mv, tt_move, killers)));
+    }
+
+    fn order_key(&self, mv: &Move, tt_move: Option<Move>, killers: [Option<Move>; 2]) -> (i32, i32) {
+        if tt_move == Some(*mv) {
+            return (3, 0);
+        }
+        if self.board.is_capture(mv) {
+            return (2, self.board.score_move(mv, self.moves_counter));
+        }
+        if killers[0] == Some(*mv) {
+            return (1, 1);
+        }
+        if killers[1] == Some(*mv) {
+            return (1, 0);
+        }
+
+        (0, self.history_table[mv.origin as usize][mv.destination as usize])
+    }
+
+    fn record_killer(&mut self, ply: u32, mv: Move) {
+        let idx = (ply as usize).min(MAX_PLY - 1);
+        if self.killer_moves[idx][0] != Some(mv) {
+            self.killer_moves[idx][1] = self.killer_moves[idx][0];
+            self.killer_moves[idx][0] = Some(mv);
+        }
+    }
 
     pub fn order_moves(&self, moves: &mut [Move]) {
         // Sort_unstable_by_key allow us to filter a Vec or Slice giving it a closure (in this case the score of the capture)
