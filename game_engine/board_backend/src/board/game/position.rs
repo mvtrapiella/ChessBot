@@ -8,7 +8,7 @@ use crate::board::types::{
     Move, Color, WHITE_PAWN, WHITE_QUEEN, WHITE_ROOK, WHITE_BISHOP, WHITE_KNIGHT,
     BLACK_PAWN, BLACK_QUEEN, BLACK_ROOK, BLACK_BISHOP, BLACK_KNIGHT,
 };
-use crate::board::zobric::TTEntry;
+use crate::board::zobric::{TTEntry, MAX_PLY};
 use crate::board::negamax::SearchLimit;
 
 use crate::board::state::Board;
@@ -31,6 +31,8 @@ pub struct Position{
     pub nodes: u64,
     pub deadline: Option<Instant>,
     pub search_aborted: bool,
+    pub killer_moves: [[Option<Move>; 2]; MAX_PLY],
+    pub history_table: [[i32; 64]; 64],
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -57,6 +59,22 @@ pub enum MoveError {
 
 
 impl Position{
+    pub fn new(board: Board) -> Position {
+        Position {
+            board,
+            history: Vec::new(),
+            transposition_table: vec![None; TT_SIZE],
+            position_history: Vec::new(),
+            moves_counter: 0,
+            search_path_hashes: Vec::new(),
+            nodes: 0,
+            deadline: None,
+            search_aborted: false,
+            killer_moves: [[None; 2]; MAX_PLY],
+            history_table: [[0; 64]; 64],
+        }
+    }
+
     pub fn game_play(&mut self, depth: u32){
         let user_color = self.color_selection();
         self.position_history.push(self.board.zobrian_hash);

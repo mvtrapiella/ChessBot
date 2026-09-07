@@ -214,6 +214,8 @@ pub const EN_PASSANT_FILE_KEYS: [u64; 8] = [
   0xd5e2ced04d8c4826,  0xe0feb8ec356d9936,  0xc7f6f2b29a4fcf84,  0xd8e2ca48f74e311b,  0x86b86517647d8bb9,  0xf21975ca997cbeee,  0x1048efd0bc9a3c13,  0x36cf646fa5b86cab,
 ];
 
+pub const MAX_PLY: usize = 128;
+
 // Exact: every move at this node was searched to completion without a cutoff, so `score`
 // is the position's real, true value -- safe to reuse outright.
 //
