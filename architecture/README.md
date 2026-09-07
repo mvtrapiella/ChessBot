@@ -13,10 +13,10 @@ render it to HTML. This requires Ruby (Gem) and Java (JRE).
 gem install asciidoctor asciidoctor-diagram
 ```
 
-Then install the Node dependencies inside this `docs` directory:
+Then install the Node dependencies inside this `architecture` directory:
 
 ```shell
-cd docs
+cd architecture
 npm install
 ```
 
@@ -26,14 +26,11 @@ npm install
 npm run build
 ```
 
-The rendered site is generated under `docs/build`.
+This renders the site straight into `/docs` at the repository root (overwriting whatever
+was there). Commit and push that folder to `main` and it's live.
 
-## Deploying
+## Publishing to GitHub Pages
 
-```shell
-npm run deploy
-```
-
-This pushes `docs/build` to the repository's `gh-pages` branch via the `gh-pages` package,
-making it available on GitHub Pages. Only the rendered documentation should live on that
-branch — never the build output on `main`.
+In the repo settings, under **Pages**, set the source to the `main` branch, `/docs` folder.
+From then on, every push to `main` that updates `/docs` (via `npm run build` + commit)
+updates the published site — no separate branch or deploy step needed.
