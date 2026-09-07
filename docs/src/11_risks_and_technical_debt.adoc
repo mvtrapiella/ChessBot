@@ -1,0 +1,7 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-risks-and-technical-debt]]
+== Risks and Technical Debt
+
+// TODO: known risks (e.g. single e2-micro VM as a single point of failure, memory
+// budget) and deliberate shortcuts taken (e.g. no null-move pruning/PVS/LMR yet).

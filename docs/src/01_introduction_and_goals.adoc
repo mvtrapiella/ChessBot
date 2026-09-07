@@ -1,0 +1,16 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-introduction-and-goals]]
+== Introduction and Goals
+
+=== Requirements Overview
+
+// TODO: functional requirements for the engine, the API, and the webapp.
+
+=== Quality Goals
+
+// TODO: top 3-5 quality goals (e.g. move latency, correctness of legal-move generation, playing strength).
+
+=== Stakeholders
+
+// TODO: table of roles and expectations.

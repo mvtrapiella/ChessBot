@@ -1,0 +1,9 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-runtime-view]]
+== Runtime View
+
+// TODO: one subsection per key scenario, e.g.:
+// === Starting a new game
+// === Player makes a move / bot replies
+// === Undoing a move

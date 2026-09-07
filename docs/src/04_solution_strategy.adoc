@@ -1,0 +1,7 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-solution-strategy]]
+== Solution Strategy
+
+// TODO: the key technology and architectural decisions and why (e.g. Rust for the
+// engine, Axum for the API, negamax + alpha-beta for search, Docker/GCP for deployment).

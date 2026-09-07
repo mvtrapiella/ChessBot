@@ -1,0 +1,13 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-system-scope-and-context]]
+== System Scope and Context
+
+=== Business Context
+
+// TODO: who/what the system talks to (a player in a browser) and why.
+
+=== Technical Context
+
+// TODO: technical interfaces (HTTP/JSON between webapp and web_server) and external
+// dependencies (e.g. the embedded Polyglot opening book).

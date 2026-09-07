@@ -1,0 +1,20 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-building-block-view]]
+== Building Block View
+
+=== Whitebox Overall System
+
+// TODO: level 1 diagram/description of the three components below and how they connect.
+
+==== board_backend — Chess Engine
+
+// TODO: board representation, move generation, search, evaluation, opening book.
+
+==== web_server — API
+
+// TODO: Axum HTTP layer, game/session state, request-to-engine mapping.
+
+==== webapp — Frontend
+
+// TODO: React/Vite UI, board rendering, client-server interaction.

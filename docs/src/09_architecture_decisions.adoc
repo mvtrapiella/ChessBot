@@ -1,0 +1,8 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-architecture-decisions]]
+== Architecture Decisions
+
+// TODO: one entry per significant decision (context / decision / status / consequences).
+// e.g. bounded transposition table over an unbounded HashMap; Vec<Option<TTEntry>> over
+// a boxed fixed-size array; Polyglot opening book format.

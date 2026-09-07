@@ -1,0 +1,25 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-concepts]]
+== Cross-cutting Concepts
+
+=== Search and Evaluation
+
+// TODO: negamax/alpha-beta, quiescence search, transposition table, move ordering,
+// evaluation function.
+
+=== Opening Book
+
+// TODO: Polyglot format, Zobrist hashing, castling-encoding remap.
+
+=== Game State and Persistence
+
+// TODO: in-memory per-game state on the server, no durable storage.
+
+=== User Interface
+
+// TODO: board interaction, move legality feedback, check/illegal-move indicators.
+
+=== Development and CI/CD
+
+// TODO: test strategy, GitHub Actions pipeline, Docker build/publish flow.

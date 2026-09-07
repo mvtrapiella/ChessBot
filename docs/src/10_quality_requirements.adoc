@@ -1,0 +1,13 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-quality-requirements]]
+== Quality Requirements
+
+=== Quality Tree
+
+// TODO: quality attributes broken down by priority (e.g. performance, correctness,
+// maintainability).
+
+=== Quality Scenarios
+
+// TODO: concrete, testable scenarios for each quality goal.

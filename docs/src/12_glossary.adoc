@@ -1,0 +1,7 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-glossary]]
+== Glossary
+
+// TODO: domain and engine-specific terms (ply, Zobrist hash, transposition table,
+// killer move, quiescence search, MVV-LVA, ...).

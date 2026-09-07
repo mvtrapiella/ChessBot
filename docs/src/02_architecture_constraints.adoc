@@ -1,0 +1,7 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-architecture-constraints]]
+== Architecture Constraints
+
+// TODO: technical constraints (Rust workspace, single e2-micro VM, free-tier services)
+// and organizational constraints (solo project, course/deadline constraints if any).

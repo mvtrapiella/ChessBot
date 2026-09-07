@@ -1,0 +1,9 @@
+ifndef::imagesdir[:imagesdir: ../images]
+
+[[section-deployment-view]]
+== Deployment View
+
+=== Infrastructure
+
+// TODO: GCP e2-micro VM, Docker Compose (web_server + webapp), nginx reverse proxy,
+// Let's Encrypt/certbot, DuckDNS domain, GitHub Actions CI/CD pipeline.
