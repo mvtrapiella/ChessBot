@@ -457,35 +457,33 @@ body {
   max-width: 1000px;
 }
 
-/* ---- Title banner ---- */
+/* ---- Title banner ----
+   #header's own default padding-left/right (.9375em) plus its max-width cap
+   are what stop the banner from reaching the right edge; a vw-based
+   negative-margin "full bleed" trick doesn't work here because with
+   :toc: left, body has a padding-left equal to the fixed TOC sidebar's
+   width, so #header is centered in (viewport - sidebar), not in the full
+   viewport. Removing the max-width and the built-in side padding instead
+   lets #header's own width:100% (already set by the base stylesheet) fill
+   exactly the space to the right of the sidebar, all the way to the real
+   right edge of the screen. */
 #header > h1:first-child,
 #header .details {
   max-width: none;
 }
 
-#header::before {
-  content: "";
-}
-
 #header {
   position: relative;
-  margin: -1.2em -1.2em 1.5em -1.2em;
+  max-width: none;
+  margin: -1.2em 0 1.5em 0;
   padding: 2.4em 2em 1.8em 2em;
   background: linear-gradient(135deg, var(--aheader-bg) 0%, var(--aheader-bg-alt) 100%);
   border-bottom: 4px solid var(--aaccent);
 }
 
-@media (min-width: 768px) {
-  #header {
-    margin-left: calc(-50vw + 50%);
-    margin-right: calc(-50vw + 50%);
-    padding-left: calc(50vw - 50% + 2em);
-    padding-right: calc(50vw - 50% + 2em);
-  }
-}
-
-#header h1 {
-  color: var(--aheader-text);
+#header h1,
+#header > h1:first-child {
+  color: var(--aheader-text) !important;
   font-family: "Noto Serif", Georgia, serif;
   font-weight: 700;
   letter-spacing: 0.01em;
@@ -623,20 +621,41 @@ code {
 #footer {
   background: var(--aheader-bg);
   color: var(--aaccent);
+  margin-bottom: 0;
 }
 
 #footer a {
   color: var(--aheader-text);
+}
+
+#footer-links {
+  background: var(--aheader-bg);
+  color: var(--aaccent);
+  text-align: center;
+  padding: 0.9em 1.25em 1.25em 1.25em;
+  border-top: 1px solid rgba(245, 241, 230, 0.15);
+  font-size: 0.95em;
+}
+
+#footer-links a {
+  color: var(--aheader-text);
+  text-decoration: none;
+}
+
+#footer-links a:hover {
+  color: var(--aaccent);
+  text-decoration: underline;
+}
+
+#footer-links span {
+  margin: 0 0.6em;
+  color: var(--aaccent);
 }
 </style>
 </head>
 <body class="article toc2 toc-left">
 <div id="header">
 <h1>Atlas — Architecture Documentation</h1>
-<div class="details">
-<span id="revnumber">version 0.1,</span>
-<span id="revdate">Draft</span>
-</div>
 <div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
@@ -2131,9 +2150,13 @@ certified, which nginx must be able to serve even before HTTPS itself is configu
 </div>
 <div id="footer">
 <div id="footer-text">
-Version 0.1<br>
-Last updated 2026-09-08 21:50:50 +0200
+Last updated 2026-09-08 22:23:18 +0200
 </div>
+</div>
+<div id="footer-links">
+  <a href="https://www.linkedin.com/in/matiasvalletrapiella/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+  <span aria-hidden="true">&#183;</span>
+  <a href="mailto:mvtrapiella@gmail.com">mvtrapiella@gmail.com</a>
 </div>
 </body>
 </html>
