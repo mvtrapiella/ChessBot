@@ -3,7 +3,111 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-runtime-view]]
 == Runtime View
 
-// TODO: one subsection per key scenario, e.g.:
-// === Starting a new game
-// === Player makes a move / bot replies
-// === Undoing a move
+=== Starting a new game
+
+`POST /games` always creates the `Board`/`Position` and stores the game before responding.
+If the player chose to play the side that doesn't move first (Black), the bot's opening
+move is computed and applied *before* the response is sent, so the client already receives
+a board with White's first move on it.
+
+[plantuml, target=runtime_create_game, format=png]
+....
+@startuml
+skinparam shadowing false
+actor Player
+participant "webapp" as FE
+participant "web_server\n(create_game)" as API
+participant "board_backend\n(Position)" as Engine
+
+Player -> FE : pick color, depth/max-difficulty, Play
+FE -> API : POST /games\n{userColor, depth, maxDifficulty}
+API -> Engine : Position::new(board)
+API -> Engine : position_history.push(start hash)
+
+alt player chose the side that moves first
+  API -> API : nothing more to do yet
+else player chose the other side
+  API -> Engine : find_best_move(searchLimit)
+  Engine --> API : opening move\n(book move or searched)
+  API -> Engine : make_move(move) + record_real_move()
+end
+
+API -> API : store Game in AppState (games map)
+API --> FE : 200 GameStateDTO
+FE --> Player : render board
+@enduml
+....
+
+=== Player makes a move, bot replies
+
+`POST /games/{id}/move` validates the move against the engine's own legality check, applies
+it, and — unless the game just ended — immediately computes and applies the bot's reply
+before responding. The client only ever sees the result of both half-moves at once; there
+is no separate "thinking" request.
+
+[plantuml, target=runtime_player_move, format=png]
+....
+@startuml
+skinparam shadowing false
+actor Player
+participant "webapp" as FE
+participant "web_server\n(make_move)" as API
+participant "board_backend\n(Position)" as Engine
+
+Player -> FE : drag/click a legal destination
+FE -> FE : applyMoveLocally()\n(optimistic preview)
+FE -> API : POST /games/{id}/move\n{origin, destination, promotion}
+
+alt not the player's turn, or move is illegal
+  API --> FE : 400 Bad Request
+  FE -> FE : revert to previousGame,\nflash origin square
+else move is legal
+  API -> Engine : apply_move_str(...)
+  Engine --> API : Ok(())
+  API -> Engine : record_real_move()
+  API -> Engine : game_status()
+
+  alt game still in progress
+    API -> Engine : find_best_move(searchLimit)
+    Engine --> API : bot move
+    API -> Engine : make_move(move) + record_real_move()
+  else game ended (checkmate / draw)
+    API -> API : skip bot reply
+  end
+
+  API --> FE : 200 GameStateDTO\n(both half-moves applied)
+  FE --> Player : render updated board,\ncheck highlight if applicable
+end
+@enduml
+....
+
+=== Undoing a turn
+
+`POST /games/{id}/undo` is a "real" undo of engine state, not just the frontend forgetting a
+move: it rewinds both the bot's last reply and the player's move before it, by calling
+`Position::undo_move()` twice and manually trimming the repetition-history and move-counter
+bookkeeping that `undo_move()` itself doesn't touch.
+
+[plantuml, target=runtime_undo, format=png]
+....
+@startuml
+skinparam shadowing false
+actor Player
+participant "webapp" as FE
+participant "web_server\n(undo_move)" as API
+participant "board_backend\n(Position)" as Engine
+
+Player -> FE : click "Undo last turn"
+FE -> API : POST /games/{id}/undo
+
+alt fewer than 2 half-moves played
+  API --> FE : 400 Bad Request ("Nothing to undo")
+else at least one full turn played
+  API -> Engine : undo_move()  ' reverts bot's reply
+  API -> Engine : undo_move()  ' reverts player's move
+  API -> API : truncate position_history by 2,\ntruncate move_history by 2,\nmoves_counter -= 2
+  API --> FE : 200 GameStateDTO\n(back to player's turn)
+  FE --> Player : render restored board
+end
+@enduml
+....
