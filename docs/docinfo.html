@@ -183,28 +183,34 @@ code {
   border-radius: 3px;
 }
 
+/* #footer-text is left empty once :reproducible: drops the "Last
+   updated" line; #footer-links is now the whole footer, so hide the
+   (now-empty) default footer div rather than let it show as a bare
+   strip of padding. */
 #footer {
-  background: var(--aheader-bg);
-  color: var(--aaccent);
-  margin-bottom: 0;
-}
-
-#footer a {
-  color: var(--aheader-text);
+  display: none;
 }
 
 #footer-links {
   background: var(--aheader-bg);
   color: var(--aaccent);
   text-align: center;
-  padding: 0.9em 1.25em 1.25em 1.25em;
-  border-top: 1px solid rgba(245, 241, 230, 0.15);
+  padding: 1.5em 1.25em;
   font-size: 0.95em;
 }
 
-#footer-links a {
+#footer-links-title {
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.8em;
+  color: var(--aaccent);
+  margin-bottom: 0.5em;
+}
+
+#footer-links-items a {
   color: var(--aheader-text);
   text-decoration: none;
+  font-weight: 600;
 }
 
 #footer-links a:hover {
