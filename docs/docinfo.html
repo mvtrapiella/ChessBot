@@ -1,0 +1,196 @@
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231b1f2a'/%3E%3Ctext x='50' y='70' font-size='58' text-anchor='middle' fill='%23c9a24b'%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --abg: #faf7f0;
+  --abg-alt: #f1ecdf;
+  --atext: #2a2620;
+  --atext-muted: #6b6459;
+  --aheader-bg: #1b1f2a;
+  --aheader-bg-alt: #262c3b;
+  --aheader-text: #f5f1e6;
+  --aaccent: #b8863b;
+  --aaccent-strong: #8f6a2c;
+  --aborder: #ddd6c7;
+}
+
+body {
+  background: var(--abg);
+  color: var(--atext);
+}
+
+#header, #content, #footnotes, #footer {
+  max-width: 1000px;
+}
+
+/* ---- Title banner ---- */
+#header > h1:first-child,
+#header .details {
+  max-width: none;
+}
+
+#header::before {
+  content: "";
+}
+
+#header {
+  position: relative;
+  margin: -1.2em -1.2em 1.5em -1.2em;
+  padding: 2.4em 2em 1.8em 2em;
+  background: linear-gradient(135deg, var(--aheader-bg) 0%, var(--aheader-bg-alt) 100%);
+  border-bottom: 4px solid var(--aaccent);
+}
+
+@media (min-width: 768px) {
+  #header {
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    padding-left: calc(50vw - 50% + 2em);
+    padding-right: calc(50vw - 50% + 2em);
+  }
+}
+
+#header h1 {
+  color: var(--aheader-text);
+  font-family: "Noto Serif", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-bottom: none;
+  margin-bottom: 0.2em;
+}
+
+#header .details {
+  color: var(--aaccent);
+  font-family: "Open Sans", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.78em;
+  letter-spacing: 0.12em;
+}
+
+#header .details span.author,
+#header .details span.revnumber,
+#header .details span.revdate,
+#header .details span.revremark {
+  color: var(--aaccent);
+}
+
+#toctitle {
+  color: var(--atext);
+  font-family: "Noto Serif", Georgia, serif;
+}
+
+/* ---- TOC sidebar (toc2 / toc=left) ---- */
+#toc.toc2 {
+  background: var(--abg-alt);
+  border-right: 1px solid var(--aborder);
+  padding: 1.4em 1.2em;
+}
+
+#toc.toc2 #toctitle {
+  font-size: 1.1em;
+  color: var(--aheader-bg);
+  border-bottom: 2px solid var(--aaccent);
+  padding-bottom: 0.4em;
+  margin-bottom: 0.6em;
+}
+
+#toc.toc2 ul.sectlevel1 > li > a {
+  font-weight: 600;
+  color: var(--atext);
+}
+
+#toc.toc2 ul a {
+  color: var(--atext-muted);
+  border-left: 2px solid transparent;
+  padding-left: 0.4em;
+  display: inline-block;
+}
+
+#toc.toc2 ul a:hover {
+  color: var(--aaccent-strong);
+  border-left-color: var(--aaccent);
+  background: rgba(184, 134, 59, 0.08);
+}
+
+/* ---- Headings ---- */
+h1, h2, h3, h4, h5 {
+  font-family: "Noto Serif", Georgia, serif;
+  color: #201d18;
+}
+
+/* :sectlinks: wraps heading text in <a class="link">, which the default
+   stylesheet colors more specifically (h2>a.link) than a plain h2 rule can
+   override, so it needs its own selector at the same specificity. */
+#content h1 > a.link, h2 > a.link, h3 > a.link, h4 > a.link, h5 > a.link,
+h1 > a.anchor, h2 > a.anchor, h3 > a.anchor, h4 > a.anchor, h5 > a.anchor {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sect1 > h2 {
+  border-bottom: 2px solid var(--aaccent);
+  padding-bottom: 0.3em;
+  margin-top: 1.6em;
+}
+
+.sect2 h3 {
+  color: var(--aaccent-strong);
+}
+
+a {
+  color: var(--aaccent-strong);
+}
+
+a:hover {
+  color: var(--aaccent);
+}
+
+/* ---- Tables ---- */
+table.tableblock {
+  border: 1px solid var(--aborder);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+table.tableblock thead tr,
+table.tableblock tfoot tr {
+  background: var(--aheader-bg);
+}
+
+table.tableblock thead tr th,
+table.tableblock thead tr th * {
+  color: var(--aheader-text) !important;
+  font-family: "Open Sans", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.82em;
+  letter-spacing: 0.04em;
+}
+
+table.tableblock tbody tr:nth-of-type(even) {
+  background: var(--abg-alt);
+}
+
+/* ---- Diagrams ---- */
+.imageblock img, .image img {
+  border: 1px solid var(--aborder);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.6em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- Misc ---- */
+code {
+  background: var(--abg-alt);
+  border-radius: 3px;
+}
+
+#footer {
+  background: var(--aheader-bg);
+  color: var(--aaccent);
+}
+
+#footer a {
+  color: var(--aheader-text);
+}
+</style>

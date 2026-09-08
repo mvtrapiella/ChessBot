@@ -5,16 +5,107 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 === Whitebox Overall System
 
-// TODO: level 1 diagram/description of the three components below and how they connect.
+The system is a Cargo workspace with three Rust crates plus one standalone frontend
+package. `web_server` is the only crate that depends on `board_backend` (as a path
+dependency); `board_backend` depends on nothing else in the workspace or outside the
+standard library; `magic_numbers` is an offline helper, not linked into either.
+
+[plantuml, target=level1, format=png]
+....
+@startuml
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 50
+skinparam ranksep 50
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #424242
+}
+
+rectangle "webapp\n(React + Vite + TypeScript)" as Webapp
+rectangle "web_server\n(Axum HTTP API)" as WebServer #BDBDBD
+rectangle "board_backend\n(chess engine library,\nzero dependencies)" as Engine #BDBDBD
+rectangle "magic_numbers\n(offline generator,\nrun once, not linked in)" as Magic #F5F5F5
+
+Webapp -right-> WebServer : HTTP/JSON (/api/*)
+WebServer -right-> Engine : path dependency\n(Cargo.toml)
+Magic .up.> Engine : magic-bitboard\nconstants (copy-pasted\ninto movegen/masks/*)
+@enduml
+....
 
 ==== board_backend — Chess Engine
 
-// TODO: board representation, move generation, search, evaluation, opening book.
+The engine's own `board` module is organized into four topic folders, all re-exported flat
+(`board::state`, `board::position`, `board::negamax`, ...) so the physical grouping below is
+an internal detail, not part of the public path:
+
+[plantuml, target=level2, format=png]
+....
+@startuml
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 40
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #424242
+}
+
+rectangle "board_backend" {
+  rectangle "model\n(state.rs, types.rs)\nBoard struct, Move, piece codes" as Model
+  rectangle "movegen\n(movegen, attacks, legality,\nmasks/* magic bitboards)" as Movegen
+  rectangle "game\n(position.rs, make_move.rs)\nPosition, game status, undo log" as Game
+  rectangle "search\n(negamax, evaluate,\nopening_book, polyglot_hash, zobric)" as Search
+}
+
+Movegen -up-> Model : reads/writes Board
+Game -up-> Model : reads/writes Board
+Game -right-> Movegen : all_legal_moves(),\nis_in_check()
+Search -left-> Game : Position fields\n(history, TT, killers...)
+Search -up-> Movegen : all_legal_moves()\n(search + evaluation)
+@enduml
+....
+
+[cols="1,3", options="header"]
+|===
+| Module | Responsibility
+
+| `model`
+| The `Board` struct (bitboards + mailbox array + game-state flags) and the shared `Move`/
+`Color`/piece-code types every other module builds on. No behavior beyond basic mutators.
+
+| `movegen`
+| Pseudo-legal move generation per piece type (including magic-bitboard sliding-piece
+attacks, precomputed at compile time), attack/check detection, and legality filtering
+(`all_legal_moves`) via a simulate-and-check-for-check approach.
+
+| `game`
+| `Position` — the container for a game in progress: the `Board`, its move history (for
+undo), the real-game position history (for repetition detection), and move-counting.
+Also owns FEN-free UCI-style move parsing (`apply_move_str`) and end-of-game detection
+(`game_status`).
+
+| `search`
+| Everything that decides *what move to play*: the negamax/alpha-beta/quiescence search,
+the static evaluation function, the transposition table, move ordering (TT move, MVV-LVA,
+killer moves, history heuristic), and the embedded Polyglot opening book.
+|===
 
 ==== web_server — API
 
-// TODO: Axum HTTP layer, game/session state, request-to-engine mapping.
+A single Axum `Router` (`main.rs`) maps 5 REST endpoints to handlers in `handlers.rs`,
+which translate between the wire-format DTOs (`dto.rs`) and `board_backend` types, and
+store per-game state in an `AppState` (`state.rs`) — a `HashMap<Uuid, Game>` behind an
+`Arc<Mutex<_>>`, with no other persistence. `error.rs` maps the only two error cases
+(`NotFound`, `BadRequest`) to HTTP status codes. `notation.rs` renders simplified algebraic
+notation for the move history.
 
 ==== webapp — Frontend
 
-// TODO: React/Vite UI, board rendering, client-server interaction.
+A React Router single-page app with two screens: `MainWindow` (pick side and bot strength,
+then create a game) and `GameWindow` (the live board). `GameWindow` owns all game
+interaction — click/drag moves, legal-move highlighting, check highlighting, illegal-move
+flashing, undo, and move-history scrubbing — through a small `fetch`-based API client
+(`api/gameApi.ts`) that mirrors the backend's DTOs and always calls the relative `/api`
+path. The board itself (`game/board/Board.tsx`, `Cell.tsx`) is hand-built: no chess UI
+library, using the same numeric piece-code convention as `board_backend`.

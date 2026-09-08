@@ -3,5 +3,52 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-architecture-constraints]]
 == Architecture Constraints
 
-// TODO: technical constraints (Rust workspace, single e2-micro VM, free-tier services)
-// and organizational constraints (solo project, course/deadline constraints if any).
+[options="header",cols="1,3"]
+|===
+| Constraint | Consequence
+
+| Solo developer
+| Every part of the system (engine, API, frontend, CI/CD, deployment) is designed,
+implemented, and operated by a single person. This favors a small number of simple,
+uniform tools over specialized ones for each concern (e.g. no separate message queue,
+no separate database, no dedicated observability stack).
+
+| Single free-tier Google Cloud `e2-micro` VM
+| The entire production deployment — reverse proxy, frontend static files, backend API, and
+certificate renewal — runs as Docker containers on one shared-core, 1 GB RAM VM. There is
+no headroom for an unbounded cache or a heavyweight database, which is why the engine's
+transposition table is a fixed-size, bounded structure rather than an ever-growing map.
+
+| No database, no user accounts
+| Game state lives only in the `web_server` process's memory (a `HashMap<Uuid, Game>`) for
+as long as that process runs. A server restart loses every in-progress game. This is an
+accepted constraint, not an oversight: the project has no login system and no requirement
+to keep games across restarts.
+
+| Rust for the engine and API
+| `board_backend` and `web_server` are both Rust, sharing the same `Move`/piece-code
+representation end-to-end (the frontend's TypeScript mirrors those same numeric piece
+codes). `board_backend` itself declares zero external crate dependencies — it only uses the
+Rust standard library — which keeps the core rules/search logic small, fast to compile, and
+free of upstream churn.
+
+| GitHub Actions + GHCR as the only CI/CD path
+| There is a single workflow (`.github/workflows/deploy.yml`), triggered on push to `main`
+or manually. It builds both Docker images, pushes them to GitHub Container Registry, then
+SSHes into the production VM to pull and restart. There is no separate automated test/CI
+workflow — `cargo test` is run locally, not gated in CI.
+
+| HTTPS via Let's Encrypt on a free dynamic-DNS domain
+| The deployed site's domain, `atlas-chessbot.duckdns.org`, is a free DuckDNS subdomain
+pointed at the VM's IP. Certificates are issued and renewed by a `certbot` container against
+that domain, which is a constraint on the nginx configuration (it must serve the ACME
+HTTP-01 challenge and fall back to a plain-HTTP config until a certificate exists — see
+<<section-deployment-view>>).
+
+| Same-origin API, no CORS in production
+| The frontend always calls a relative `/api` path, never an absolute host:port. In
+production, nginx reverse-proxies `/api/*` to the backend container so the browser only
+ever talks to one origin. `CorsLayer` in `web_server` exists purely to make local
+development (`cargo run` on port 3000 next to `npm run dev` on port 5173) work, not for
+production traffic.
+|===

@@ -3,6 +3,130 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-architecture-decisions]]
 == Architecture Decisions
 
-// TODO: one entry per significant decision (context / decision / status / consequences).
-// e.g. bounded transposition table over an unbounded HashMap; Vec<Option<TTEntry>> over
-// a boxed fixed-size array; Polyglot opening book format.
+Recorded as arc42-style short ADRs, most recent last.
+
+=== ADR-1: Hybrid bitboard + mailbox board representation
+
+*Status*: Accepted.
+
+*Context*: Move generation needs fast set operations (attacks, occupancy), while notation,
+the API's DTOs, and check detection need fast "what piece is on this square" lookups.
+
+*Decision*: `Board` keeps both a `[u64; 12]` bitboard array and a `[u8; 64]` mailbox array,
+with the mailbox as the source of truth that bitboards are derived from. Sliding-piece
+attacks use precomputed magic bitboards; the magic numbers were found offline by a separate
+`magic_numbers` binary (a small pseudo-random search) rather than computed at build or run
+time.
+
+*Consequences*: Every move must keep both representations consistent (handled centrally in
+`make_move`/`undo_move`); in exchange, both move generation and the web/notation layer get
+the access pattern each actually needs, and sliding-piece attacks are a single array lookup.
+
+=== ADR-2: Negamax with fail-soft alpha-beta and quiescence, not separate min/max
+
+*Status*: Accepted.
+
+*Context*: A search algorithm was needed that both sides could share without duplicating
+logic for "maximizing" vs "minimizing" player.
+
+*Decision*: A single recursive `negamax` function, always evaluated from the side-to-move's
+perspective and negated on return, with alpha-beta pruning and a quiescence search at
+unstable leaves (any leaf that's in check or has a capture/promotion available) to avoid the
+horizon effect.
+
+*Consequences*: One code path to optimize and test instead of two; all further search
+improvements (transposition table, move ordering) plug into this single function.
+
+=== ADR-3: Bounded, fixed-size transposition table instead of an unbounded map
+
+*Status*: Accepted (supersedes an earlier `HashMap<u64, TTEntry>`).
+
+*Context*: The original transposition table was a plain `HashMap`, with no size bound and no
+eviction, never cleared between moves or between iterative-deepening depths. Since a
+`Position` persists for a whole game on the web server, and the whole stack is deployed on a
+single 1 GB `e2-micro` VM shared with nginx and certbot, unbounded growth here was a real
+operational risk, not a theoretical one.
+
+*Decision*: Replace it with `Vec<Option<TTEntry>>` of a fixed size (65,536 entries,
+~1.5 MB), indexed by `hash & (SIZE - 1)`, with depth-preferred replacement and the full key
+stored in each entry to detect index collisions. `Vec<Option<TTEntry>>`, constructed via
+`vec![None; SIZE]`, was chosen over a fixed-size array field or `Box<[Option<TTEntry>; SIZE]>`:
+an inline array field of that size would make every move or return of a `Position` (or a
+`Game` holding one) copy the full buffer, and constructing the array literal risks
+materializing it on the stack first in a debug build before it's moved to its final
+location, which Rust does not guarantee against; a boxed fixed-size array would be a more
+precise type-level match (heap-allocated and incapable of resizing) but changes no actual
+runtime behavior, since `tt_index()` already forces every access into bounds via the
+bitmask — and safely constructing one without the same stack-materialization risk requires
+routing through a `Vec` anyway. `Vec::vec![None; SIZE]` is the direct, safe, idiomatic
+choice.
+
+*Consequences*: Memory is now bounded and predictable regardless of game length or how many
+iterative-deepening depths run. The table can no longer hold more entries than
+`TT_SIZE`, so two different positions that hash to the same index will evict each other
+(mitigated, not eliminated, by depth-preferred replacement).
+
+=== ADR-4: Layered move-ordering signal for quiet moves
+
+*Status*: Accepted.
+
+*Context*: `order_moves` (used only in quiescence search) is pure MVV-LVA, which scores
+every non-capture move identically at `0`. Since the majority of moves in a typical
+position are quiet, this left alpha-beta with no ordering signal for most of the tree, and
+the transposition table's own recommended move was only ever used for score cutoffs, never
+to inform ordering when a cutoff wasn't available.
+
+*Decision*: Add `order_moves_at_node`, used only in the main negamax search (not
+quiescence), ranking moves by a `(category, tiebreak)` key: the transposition table's move
+first, then captures (existing MVV-LVA), then killer moves (2 per ply, recorded on a beta
+cutoff), then the history heuristic (a `[64][64]` table incremented on cutoffs, weighted by
+depth squared, never cleared). Using a `(category, tiebreak)` tuple rather than one blended
+numeric score means the category ordering never depends on tuning any individual signal's
+numeric range.
+
+*Consequences*: Quiet moves that have previously caused cutoffs are now tried earlier,
+which should reduce nodes searched for the same result; quiescence search deliberately keeps
+using the older, simpler `order_moves`, since it never reaches a quiet leaf and so has no
+use for killers or history.
+
+=== ADR-5: Embedded Polyglot-format opening book with a from-scratch, format-compatible Zobrist hash
+
+*Status*: Accepted.
+
+*Context*: Without a book, the engine re-derives well-known opening theory by search alone
+every game, spending time and occasionally choosing a weaker or more easily-refuted line
+than known theory.
+
+*Decision*: Embed a real, standard Polyglot-format book (`gm2001.bin`, built from
+grandmaster games) directly into the binary via `include_bytes!`, and implement Polyglot's
+own hash function from scratch — using its published random constants — rather than reusing
+the engine's own internal Zobrist scheme, so the hash is compatible with any standard
+Polyglot book, not merely shaped like one. Values were independently verified against
+`python-chess`'s own Polyglot hash implementation. Polyglot's castling encoding (the king
+"capturing" its own rook) is remapped to this engine's own representation (the king's actual
+landing square) before a book move is used, and every book move is re-validated against the
+engine's real legal-move list before being returned.
+
+*Consequences*: Opening play matches known theory and is effectively free (no search); the
+engine now carries two independent Zobrist implementations (its own, and Polyglot's) that
+must not be conflated, and the book is bounded to the first 20 plies as a backstop even
+though real book coverage usually runs out earlier.
+
+=== ADR-6: Single free-tier VM, images built in CI and pulled, not built, on the VM
+
+*Status*: Accepted.
+
+*Context*: As a solo project with no budget, the deployment target had to be free-tier and
+resource-constrained (a Google Cloud `e2-micro` VM: shared vCPU, 1 GB RAM), which rules out
+building Rust or Node projects directly on the VM as part of deployment.
+
+*Decision*: GitHub Actions builds both Docker images and pushes them to GHCR on every push
+to `main`; the VM only ever receives `docker-compose.prod.yml` (via `scp`) and runs
+`docker compose pull && up -d` over SSH. Production HTTPS is obtained via Let's Encrypt
+against a free DuckDNS domain (`atlas-chessbot.duckdns.org`), with nginx self-selecting
+between an HTTP-only and an HTTPS config depending on whether a certificate is already
+present, so a certificate-less first boot doesn't prevent nginx from starting.
+
+*Consequences*: The VM never needs a Rust/Node toolchain and stays lightweight; deployment
+depends on GHCR and GitHub Actions being available, and on the DuckDNS record continuing to
+point at the VM's IP for certificate renewal to keep working.

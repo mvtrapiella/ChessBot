@@ -5,5 +5,115 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 === Infrastructure
 
-// TODO: GCP e2-micro VM, Docker Compose (web_server + webapp), nginx reverse proxy,
-// Let's Encrypt/certbot, DuckDNS domain, GitHub Actions CI/CD pipeline.
+Production runs as four Docker containers, defined in `docker-compose.prod.yml`, on a
+single Google Cloud `e2-micro` VM reachable at `atlas-chessbot.duckdns.org` (a free DuckDNS
+domain pointed at the VM's IP). The VM only ever holds that one compose file — it pulls
+prebuilt images rather than building from source.
+
+[plantuml, target=deployment-lvl1, format=png]
+....
+@startuml
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 45
+skinparam ranksep 45
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #424242
+}
+skinparam database {
+    BackgroundColor #F5F5F5
+    BorderColor #424242
+}
+
+cloud "GitHub" as GH {
+  rectangle "GitHub Actions\n(.github/workflows/deploy.yml)" as Actions
+  database "GHCR\nchessbot-backend, chessbot-webapp" as GHCR
+}
+
+node "Google Cloud e2-micro VM\natlas-chessbot.duckdns.org" as VM #F0F0F0 {
+  rectangle "webapp container\nnginx + React SPA\nports 80, 443" as Webapp
+  rectangle "backend container\nAxum API\n(no published port)" as Backend
+  rectangle "certbot container\nrenews every 12h" as Certbot
+  database "certbot-etc volume\n/etc/letsencrypt" as CertEtc
+  database "certbot-webroot volume\n/var/www/certbot" as CertWebroot
+}
+
+Actions -down-> GHCR : docker build-push-action\n(on push to main)
+Actions -down-> VM : scp docker-compose.prod.yml\nssh: compose pull && up -d
+GHCR -left-> VM : docker compose pull
+
+Webapp -right-> Backend : /api/* via\nresolver 127.0.0.11\n(Docker embedded DNS)
+Webapp -down-> CertEtc : reads certificate
+Webapp -down-> CertWebroot : serves ACME challenge
+Certbot -up-> CertEtc : writes renewed certificate
+Certbot -up-> CertWebroot : writes ACME challenge
+@enduml
+....
+
+[cols="1,3", options="header"]
+|===
+| Container | Role
+
+| `webapp`
+| `nginx:alpine` serving the built React SPA and reverse-proxying `/api/*` to `backend`.
+Publishes 80 and 443. Owns the two named volumes shared with `certbot`.
+
+| `backend`
+| The Axum API (`web_server`), built from `debian:bookworm-slim`, running as an
+unprivileged user. Not published to the host — only reachable from `webapp` over the
+Docker network, by container name (`backend:3000`).
+
+| `certbot`
+| Runs `certbot renew --webroot` on a loop (12-hour sleep), against the same volumes
+`webapp` reads the certificate from and serves the ACME challenge out of. Initial
+certificate issuance is a one-off manual step, not something this loop performs.
+|===
+
+=== Deployment pipeline
+
+Every push to `main` (or a manual trigger) runs `.github/workflows/deploy.yml`, which has
+two sequential jobs:
+
+1. **`build-and-push`** — logs into GHCR, then builds and pushes the backend image
+   (context: repo root, since `web_server` needs its sibling workspace crates available)
+   and the webapp image (context: `webapp/`), both tagged `:latest`.
+2. **`deploy`** — copies `docker-compose.prod.yml` to the VM over SCP, then over SSH runs
+   `docker compose -f docker-compose.prod.yml pull && up -d`. The VM's SSH host, user, and
+   key, and the `docker compose pull`/`up -d` step itself never touches source code —
+   only the two already-built images.
+
+=== Certificate bootstrap and selection
+
+A fresh container has no certificate yet, so nginx can't simply be configured to require
+HTTPS from the start — it would refuse to start, referencing a file that doesn't exist. An
+entrypoint script (`webapp/select-nginx-config.sh`) resolves this by checking, on every
+container start, whether `/etc/letsencrypt/live/atlas-chessbot.duckdns.org/fullchain.pem`
+is already present in the shared volume:
+
+[plantuml, target=deployment-https-flow, format=png]
+....
+@startuml
+skinparam shadowing false
+start
+:webapp container starts;
+if (fullchain.pem exists\nin certbot-etc volume?) then (yes)
+  :copy nginx.https.conf\nas active config;
+  :serve HTTP -> 301 redirect to HTTPS;
+  :serve HTTPS with the\nLet's Encrypt certificate;
+else (no)
+  :copy nginx.http-only.conf\nas active config;
+  :serve plain HTTP,\nincluding /.well-known/acme-challenge/;
+  :(manual, one-off) issue the first\ncertificate via certbot against\nthe running HTTP server;
+  :restart webapp container\n-> HTTPS config now selected;
+endif
+:certbot container renews\nthe certificate every ~12h\nfor as long as it stays valid;
+stop
+@enduml
+....
+
+Both nginx configs proxy `/api/*` to `\http://backend:3000` using an explicit `resolver
+127.0.0.11` (Docker's embedded DNS) and a `set`-then-`rewrite ... break` pair, rather than a
+bare `proxy_pass` — this makes nginx resolve `backend` lazily on each request instead of
+failing to start if the `backend` container isn't registered in Docker's DNS yet at nginx's
+own startup.

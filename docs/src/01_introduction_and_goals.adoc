@@ -3,14 +3,108 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-introduction-and-goals]]
 == Introduction and Goals
 
+Atlas is a chess engine written from scratch in Rust, exposed through a web API and played
+through a browser-based board. The project has two parts that are deliberately kept
+independent: `board_backend`, a dependency-free chess engine (board representation, move
+generation, search, evaluation, and an embedded opening book), and a thin web stack
+(`web_server`, an Axum HTTP API, and `webapp`, a React/Vite single-page frontend) that lets
+a human play against it.
+
 === Requirements Overview
 
-// TODO: functional requirements for the engine, the API, and the webapp.
+==== Related to gameplay
+
+* A player must be able to play a full game of standard chess against the bot in a browser,
+  from the initial position to checkmate, stalemate, the fifty-move rule, insufficient
+  material, or threefold repetition.
+* The player must be able to choose which side to play (White, Black, or a random
+  assignment) before starting a game; if the bot moves first, that opening move is already
+  present in the response that creates the game.
+* The player must be able to choose the bot's strength before starting a game: either a
+  fixed search depth (1 to 6, via a spinner) or a "max difficulty" mode that gives the bot a
+  fixed time budget per move instead of a fixed depth.
+* Moves must be entered either by clicking a piece then a destination square, or by
+  dragging the piece; the client asks the server which destinations are legal for the
+  selected piece and highlights them.
+* An illegal move attempt must be visibly rejected (a brief flash on the origin square) and
+  must not change the board.
+* The king must be visibly highlighted when it is in check.
+* The player must be able to undo their last turn, which reverts both their own move and
+  the bot's reply to it.
+* The player must be able to step back and forward through the move history to review past
+  positions without affecting the live game.
+* The player must be able to concede the game at any point (surrender).
+
+==== Related to the engine
+
+* The engine must only ever produce legal moves, for itself and when validating the
+  player's moves.
+* The engine must correctly detect check, checkmate, stalemate, the fifty-move rule,
+  insufficient material, and threefold repetition.
+* The engine must be able to consult a real opening book (a Polyglot-format book derived
+  from grandmaster games) so that known openings are played instantly and idiomatically,
+  without spending search time on them.
+
+==== Related to the web layer
+
+* The API must let a client create a game, fetch its current state, query legal moves for a
+  square, submit a move, and undo the last turn.
+* Game state is kept only for the lifetime of the server process; there is no user account
+  system and no persistence layer.
 
 === Quality Goals
 
-// TODO: top 3-5 quality goals (e.g. move latency, correctness of legal-move generation, playing strength).
+[options="header",cols="1,3"]
+|===
+| Quality Goal | Description
+
+| Functional suitability
+| The engine must never generate or accept an illegal move, and must correctly resolve
+every game-ending condition supported by the rules of chess. Move generation is checked
+against the standard perft reference values for the starting position up to depth 5.
+
+| Performance efficiency
+| The whole stack (engine, API, and reverse proxy) is deployed on a single free-tier Google
+Cloud `e2-micro` VM (2 shared vCPUs, 1 GB RAM), shared between the backend, the frontend's
+nginx, and certbot. The engine's memory footprint is intentionally bounded (a fixed-size
+transposition table, not an unbounded cache) so a long-running game cannot grow without
+limit and exhaust that budget.
+
+| Maintainability
+| The engine (`board_backend`) has zero external dependencies and no knowledge of HTTP,
+JSON, or game persistence; the web layer depends on the engine, never the reverse. This
+keeps the rules/search logic testable and reusable (e.g. from the CLI binary in `main.rs`)
+independently of how it's served.
+
+| Reliability
+| A game's outcome must always be decided by the same rules the engine actually plays by —
+there is no separate "is this legal" check duplicated in the frontend; the client always
+asks the server for legal destinations and lets the server reject illegal moves.
+|===
 
 === Stakeholders
 
-// TODO: table of roles and expectations.
+[options="header",cols="1,2,2"]
+|===
+| Role | Who | Expectations
+
+| Owner / sole developer
+| Matías Valle Trapiella
+| Designs, implements, tests, and deploys every part of the system; decides scope and
+priorities.
+
+| Players
+| Anyone visiting the deployed site
+| A playable, responsive chess board that behaves correctly and gives a bot opponent of a
+chosen strength, without needing to install anything or create an account.
+
+| CI/CD pipeline
+| GitHub Actions (`.github/workflows/deploy.yml`)
+| On every push to `main`, builds and pushes the backend and frontend Docker images to
+GHCR, then deploys them to the production VM.
+
+| Deployment host
+| A single Google Cloud `e2-micro` VM, reached over SSH from the CI pipeline
+| Runs the production containers (`docker-compose.prod.yml`) continuously and reliably
+within its resource limits.
+|===

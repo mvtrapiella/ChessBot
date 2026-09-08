@@ -3,5 +3,68 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-solution-strategy]]
 == Solution Strategy
 
-// TODO: the key technology and architectural decisions and why (e.g. Rust for the
-// engine, Axum for the API, negamax + alpha-beta for search, Docker/GCP for deployment).
+[options="header",cols="1,3"]
+|===
+| Decision | Rationale
+
+| A dependency-free Rust engine, separate from the web layer
+| `board_backend` has an empty `[dependencies]` section — board representation, move
+generation, search, and evaluation are all standard-library Rust. Keeping the engine free
+of web/serialization concerns means it can be exercised directly (the CLI binary in
+`main.rs`, and 35+ unit/perft tests) without spinning up any HTTP server, and it can be
+reused unchanged if the web layer ever changes.
+
+| Bitboards + a mailbox array, not one or the other
+| `Board` keeps a `[u64; 12]` bitboard per piece type/color for fast set operations
+(attacks, occupancy) alongside a `[u8; 64]` mailbox for O(1) "what's on this square"
+lookups, which move generation, notation, and the DTOs all need constantly. Magic
+bitboards (precomputed at compile time, with the magic numbers themselves found offline by
+the separate `magic_numbers` binary) make sliding-piece attack lookups a single array index
+instead of ray-tracing.
+
+| Negamax with alpha-beta, quiescence search, and a bounded transposition table
+| A single recursive `negamax` implementation (rather than separate min/max functions)
+keeps the search code and its optimizations (TT, move ordering) in one place. Quiescence
+search at the leaves avoids the horizon effect on captures. The transposition table is a
+fixed-size `Vec<Option<TTEntry>>` (65,536 entries, direct-mapped, depth-preferred
+replacement) rather than an unbounded `HashMap` specifically because the whole stack runs
+on a 1 GB VM — memory has to be bounded and predictable, not "capped eventually."
+
+| An embedded, real opening book instead of book-less search from move one
+| Rather than spend search time reinventing well-known openings, `find_best_move` first
+checks a Polyglot-format book built from grandmaster games (`gm2001.bin`), compiled
+directly into the binary with `include_bytes!`. This needed a from-scratch,
+Polyglot-compatible Zobrist hash (independent of the engine's own internal Zobrist scheme)
+and a remap for Polyglot's quirk of encoding castling as the king "capturing" its own rook.
+
+| A thin Axum API with purely in-memory state
+| `web_server` exists only to expose the engine over HTTP: it holds a
+`HashMap<Uuid, Game>` behind a mutex, translates JSON DTOs to/from the engine's own types,
+and calls straight into `board_backend`. There is no database and no session/auth layer,
+because the project has no requirement to persist a game across a server restart or to
+identify a returning player.
+
+| A hand-built React board, no chess UI library
+| The frontend renders the board, pieces, drag/click interactions, and move animation
+itself, using the same numeric piece-code convention as the backend rather than converting
+to/from a third-party library's model. The client never re-implements legality: it asks the
+server for legal destinations and lets the server be the single source of truth for what's
+allowed.
+
+| Same-origin traffic via nginx, not a public CORS-enabled API
+| The frontend always calls a relative `/api` path. In production, nginx reverse-proxies
+that to the backend container over the Docker network, so the browser only ever sees one
+origin. This removes an entire class of CORS configuration from the production path; the
+`CorsLayer` in `web_server` only exists to support local development.
+
+| Container images built once in CI, deployed by pulling, not building on the VM
+| GitHub Actions builds both Docker images and pushes them to GHCR; the VM only ever
+receives `docker-compose.prod.yml` (via `scp`) and runs `docker compose pull && up -d`. The
+1 GB VM never has to run a Rust or Node build itself.
+
+| Let's Encrypt over a free DuckDNS domain, with a self-selecting nginx config
+| `atlas-chessbot.duckdns.org` is free, and certbot issues/renews the certificate against
+it. Since a certificate might not exist yet on a fresh deploy, an entrypoint script chooses
+between an HTTP-only nginx config and the HTTPS one depending on whether the certificate
+file is already present, instead of nginx refusing to start.
+|===

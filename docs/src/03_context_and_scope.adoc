@@ -5,9 +5,71 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 === Business Context
 
-// TODO: who/what the system talks to (a player in a browser) and why.
+There is exactly one kind of external actor: a **player**, using a web browser. The player
+opens the site, picks a side and a bot strength, and plays a game move by move against
+Atlas. There are no other human roles (no admin, no accounts), and no external systems the
+business logic depends on — the only external-looking dependency is the opening book, which
+is a static file bundled into the engine binary at compile time, not a live service.
+
+[plantuml, target=context_component, format=png]
+....
+@startuml
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 50
+skinparam ranksep 50
+skinparam rectangle {
+    BackgroundColor #FFFFFF
+    BorderColor #424242
+}
+
+actor "Player" as Player
+
+rectangle "e2-micro VM" as VM #F0F0F0 {
+    rectangle "webapp container\n(nginx + React SPA)" as Webapp #FFFFFF
+    rectangle "backend container\n(Axum API)" as Backend #FFFFFF
+    rectangle "board_backend\n(in-process engine library)" as Engine #BDBDBD
+    database "gm2001.bin\n(opening book, embedded\nat compile time)" as Book #F5F5F5
+}
+
+Player -right-> Webapp : HTTPS (443)
+Webapp -right-> Backend : /api/* (reverse-proxied)
+Backend -down-> Engine : function calls\n(same process)
+Engine -right-> Book : compiled in\n(include_bytes!)
+@enduml
+....
 
 === Technical Context
 
-// TODO: technical interfaces (HTTP/JSON between webapp and web_server) and external
-// dependencies (e.g. the embedded Polyglot opening book).
+[cols="1,2,2", options="header"]
+|===
+| Channel | Carries | Notes
+
+| Browser → webapp container (HTTPS, port 443)
+| The React single-page app's static assets, then its own `fetch` calls back to the same
+origin.
+| Served by nginx; HTTP on port 80 redirects to HTTPS once a Let's Encrypt certificate
+exists (see <<section-deployment-view>>).
+
+| webapp → backend (`/api/*`, reverse-proxied)
+| JSON requests/responses for the 5 REST endpoints (`POST /games`, `GET /games/{id}`,
+`GET /games/{id}/legal-moves/{square}`, `POST /games/{id}/move`, `POST /games/{id}/undo`).
+| nginx rewrites `/api/xyz` to `/xyz` and forwards it to the `backend` container over the
+Docker network; the browser never talks to the backend directly. Locally, Vite's dev
+server proxy plays the same role.
+
+| backend → board_backend
+| Rust function calls within the same process — `Position::find_best_move`,
+`Position::apply_move_str`, `Board::all_legal_moves`, etc.
+| Not a network boundary: `board_backend` is a library crate the `web_server` binary links
+against, not a separate service.
+
+| board_backend → opening book
+| A parsed table of `(Zobrist key, move, weight)` entries.
+| The `.bin` file is embedded into the compiled binary with `include_bytes!` at build time;
+there is no runtime file path, network call, or database involved.
+|===
+
+Everything to the right of the player in the diagram above runs on the same VM and inside
+the same Docker Compose project; there is no multi-host distribution and no other system
+this application integrates with.

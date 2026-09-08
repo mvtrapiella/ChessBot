@@ -5,9 +5,84 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 === Quality Tree
 
-// TODO: quality attributes broken down by priority (e.g. performance, correctness,
-// maintainability).
+Breaking the four quality goals from <<section-introduction-and-goals>> down into the
+concrete properties they actually mean for this system:
+
+[plantuml, target=quality_tree, format=png]
+....
+@startmindmap
+* Atlas quality goals
+** Functional suitability
+*** Move generation never produces\nan illegal move
+*** Move generation never omits\na legal move
+*** Every game-ending condition is\ndetected correctly (mate, stalemate,\n50-move, insufficient material,\nthreefold repetition)
+*** Book moves are always\nre-validated as legal
+** Performance efficiency
+*** Engine memory stays bounded\nregardless of game length
+*** Whole stack fits the\n1 GB e2-micro VM budget
+*** Deeper/slower search modes\n(TimeBudget) never exceed\ntheir own deadline
+** Maintainability
+*** Engine has zero external\ndependencies
+*** Engine has no knowledge of\nHTTP/JSON/persistence
+*** Web layer never duplicates\nrules the engine already owns
+** Reliability
+*** Server is the only source\nof truth for legality
+*** Frontend never accepts a move\nthe server didn't confirm
+*** A server restart's data loss\nis an accepted, documented\ntrade-off, not a silent gap
+@endmindmap
+....
 
 === Quality Scenarios
 
-// TODO: concrete, testable scenarios for each quality goal.
+[cols="1,1,3,2", options="header"]
+|===
+| # | Quality Goal | Scenario | Verification
+
+| QS-1
+| Functional suitability
+| Move generation is run from the standard starting position to depths 1 through 5.
+| `perft_matches_known_values_for_starting_position` asserts the exact node counts from
+the Chess Programming Wiki reference (20, 400, 8,902, 197,281, 4,865,609) — any illegal or
+missing move at any depth would change these counts.
+
+| QS-2
+| Functional suitability
+| A position is set up where a move exists that immediately checkmates the opponent.
+| `finds_mate_in_one` asserts `find_best_move` returns exactly that move at depth 1.
+
+| QS-3
+| Functional suitability
+| A position is set up with no legal moves and the side to move not in check.
+| `recognizes_stalemate_as_a_draw` asserts the legal-move list is empty, the side to move
+is not in check, `find_best_move` returns `None`, and `negamax` scores the position `0`.
+
+| QS-4
+| Performance efficiency
+| A game is played long enough, or searched deep enough, to fill the transposition table
+past its fixed capacity.
+| The table can never grow past `TT_SIZE` entries (~1.5 MB) — `tt_store`'s replacement
+policy always fits a new entry into an existing slot rather than allocating more, verified
+by `tt_store_overwrites_on_index_collision_regardless_of_depth` and
+`tt_store_keeps_deeper_entry_on_same_key`.
+
+| QS-5
+| Performance efficiency
+| The bot is asked to move under `SearchLimit::TimeBudget` (the "max difficulty" mode).
+| Iterative deepening in `find_best_move` checks the deadline every `NODE_CHECK_INTERVAL`
+(2048) nodes and keeps only the last *completed* depth's result, so a search that runs out
+of time mid-depth still returns a legal move rather than blocking past its budget.
+
+| QS-6
+| Maintainability
+| A change is needed to the search or evaluation logic.
+| It can be made, and its unit tests run, entirely within `board_backend` — confirmed by
+`board_backend`'s empty `[dependencies]` list, which means no web/serialization crate ever
+needs to be touched or recompiled for an engine-only change.
+
+| QS-7
+| Reliability
+| A client attempts a move that isn't legal in the current position.
+| `apply_move_str` validates against `Board::all_legal_moves()` before mutating any state
+and returns an error the API turns into `400 Bad Request`; the frontend never applies such
+a move to the live game (only an optimistic preview, rolled back on rejection).
+|===
