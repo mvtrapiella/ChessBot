@@ -3,23 +3,174 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-concepts]]
 == Cross-cutting Concepts
 
-=== Search and Evaluation
+=== Board representation
 
-// TODO: negamax/alpha-beta, quiescence search, transposition table, move ordering,
-// evaluation function.
+`Board` combines a bitboard and a mailbox representation rather than picking one:
+a `[u64; 12]` array (one bitboard per piece type and color) supports fast set operations —
+attacks, occupancy checks — while a `[u8; 64]` mailbox array (one piece code per square,
+sized to exactly fill an L1 cache line) answers "what's on this square" in O(1), which move
+generation, notation, and the API's DTOs all need constantly. The mailbox is the source of
+truth for every mutation; the bitboards are derived from it. Sliding-piece (bishop, rook,
+queen) attacks are looked up via precomputed magic bitboards, built at compile time; the
+magic numbers themselves were found offline by the separate `magic_numbers` binary (a small
+pseudo-random search over candidate magics) and are not recomputed at runtime.
 
-=== Opening Book
+=== Search and evaluation
 
-// TODO: Polyglot format, Zobrist hashing, castling-encoding remap.
+`find_best_move` first checks the opening book (below); only if it has no book move does it
+fall back to search.
 
-=== Game State and Persistence
+Search is a single recursive `negamax` function with fail-soft alpha-beta pruning, so both
+sides share one implementation instead of separate min/max functions. Two `SearchLimit`
+modes exist: `Depth(n)`, a single fixed-depth search (used for the 1–6 difficulty spinner),
+and `TimeBudget(duration)`, which performs iterative deepening — repeatedly calling the
+depth-limited search at depth 1, 2, 3, … until the time budget runs out, keeping the best
+move from the last depth that finished completely ("max difficulty" uses a 5-second
+budget). At `depth == 0`, a position that isn't "stable" (any legal move is a capture or
+promotion) or that is in check drops into quiescence search instead of returning a static
+score directly, so the engine doesn't misjudge a position in the middle of a capture
+sequence (the horizon effect).
 
-// TODO: in-memory per-game state on the server, no durable storage.
+The static evaluator (`Board::evaluate`) scores material for both sides and returns the
+difference from the side-to-move's perspective, tapering several terms between middlegame
+and endgame values based on a phase estimate (remaining knights/bishops/rooks/queens). Each
+piece type contributes a base value plus its own positional terms:
 
-=== User Interface
+[cols="1,3", options="header"]
+|===
+| Piece | Positional terms modeled
 
-// TODO: board interaction, move legality feedback, check/illegal-move indicators.
+| Pawn
+| Piece-square table, a tapered passed-pawn bonus (scaled by how far advanced), an isolated-
+pawn penalty, a doubled-pawn penalty.
+
+| Knight
+| Piece-square table only.
+
+| Bishop
+| Piece-square table, a mobility bonus, a "bad bishop" penalty for own pawns on the
+bishop's square color, plus a bishop-pair bonus (once per side).
+
+| Rook
+| Piece-square table, an open/semi-open-file bonus, a 7th-rank bonus, a mobility bonus, a
+"trapped in the home corner behind its own king and a pawn" penalty, an "still on its home
+square after move 24" undeveloped-rook penalty, and a connected-rooks bonus (once per
+side).
+
+| Queen
+| Piece-square table, a mobility bonus, a bonus for sharing a file/rank with the enemy king
+or sitting on the 7th/2nd rank, and an "early queen" penalty — brought out before move 20
+while the side's own minor pieces are still undeveloped.
+
+| King
+| A tapered piece-square table (rewarding castled corners in the middlegame, centralization
+in the endgame), a pawn-shield penalty (missing pawns in front of a castled king, only while
+enough material remains on the board for an attack), and a "hasn't castled and has lost both
+castling rights before move 30" penalty.
+|===
+
+There is no general mobility term for every piece, no king-safety scoring beyond the two
+terms above, and no pawn-chain/pawn-storm modeling beyond passed/isolated/doubled — the
+evaluation is deliberately a fixed, hand-tuned set of terms rather than a tuned/tapeable
+weight vector.
+
+=== Move ordering
+
+Alpha-beta's effectiveness depends on searching the most promising move first. Moves at
+each node are sorted by a `(category, tiebreak)` key, highest category first, so the
+category ordering never depends on tuning any one signal's numeric range:
+
+. The move stored in the transposition table for this position, if any.
+. Captures, ranked by MVV-LVA (`victim value * 10 - attacker rank`, where attacker rank is
+  a small 1–5 ordinal scale rather than the attacker's own point value, so a real capture
+  can never be scored below a quiet move).
+. Killer moves — up to 2 quiet moves per ply that most recently caused a beta cutoff at
+  that same ply, tried early because a tactical theme that works in one branch often
+  recurs in a sibling at the same depth.
+. Everything else, ranked by the history heuristic — a `[64][64]` table of origin/
+  destination scores, incremented whenever a quiet move causes a cutoff anywhere in the
+  tree (weighted by depth squared), and never cleared.
+
+Quiescence search reuses none of this — it only ever explores captures/promotions/
+evasions, ordered by plain MVV-LVA, since there's no meaningful "killer" or "history" concept
+for a search that never reaches a quiet leaf.
+
+=== Transposition table
+
+A fixed-size, direct-mapped table (`Vec<Option<TTEntry>>`, 65,536 entries, indexed by
+`hash & (SIZE - 1)`) rather than an unbounded map — deliberately bounded because the whole
+stack runs on a 1 GB VM. Each entry stores its full 64-bit key (to detect index collisions,
+which are new with a fixed-size table and distinct from true hash collisions), the depth it
+was searched to, a score, a bound type (exact / lower / upper), and the best move found.
+Replacement is depth-preferred: a new entry always overwrites an empty slot or one holding a
+different position, and overwrites a same-position entry only if searched at least as deep.
+The table persists for the lifetime of a game (not cleared between moves), so deeper
+iterative-deepening passes and later moves in the same game keep benefiting from earlier
+search work.
+
+=== Repetition detection
+
+Two separate hash lists exist because they answer different questions. `position_history`
+records the Zobrist hash of every position actually reached in the real game, pushed once
+per real move; it drives both `game_status()`'s threefold-repetition check (three
+occurrences) and, inside search, an early cutoff. `search_path_hashes` records the hashes
+along the *current, hypothetical* search branch only, pushed/popped as the search recurses
+and cleared at the start of every `find_best_move` call — this exists because the
+transposition table gets overwritten with hypothetical positions from search, so it can't
+be used to answer "would this be a repetition in the game actually being played." Inside
+`negamax`, reaching a position that already occurred once (summed across both lists) scores
+it as an immediate draw, before even probing the transposition table — deliberately, since
+whether a position is a repetition is path-dependent, and that result must never be written
+into the (path-independent) transposition table.
+
+=== Opening book
+
+`find_best_move` consults an embedded Polyglot-format book (`gm2001.bin`, built from
+grandmaster games) before doing any search at all, for as long as the game is within its
+first 20 plies. The book file is compiled directly into the binary with `include_bytes!`,
+so there's no runtime file path or I/O. Looking up a move requires a Polyglot-compatible
+Zobrist hash — a from-scratch implementation, deliberately independent of the engine's own
+internal Zobrist scheme, using Polyglot's own published random constants so the hash is
+byte-for-byte compatible with any standard Polyglot book, not just shape-compatible. Two
+details this needed to get right: Polyglot's en-passant hashing rule only counts the file if
+an enemy pawn could actually capture there right now (not merely because the engine's own
+`en_passant_square` field is set), and Polyglot encodes castling as the king "capturing" its
+own rook (e.g. e1h1 for White short castle) rather than the king's actual landing square —
+the four unambiguous origin/destination pairs are remapped before the move is used. Every
+book move is re-validated against the engine's own legal-move list before being played, since
+a hash match alone doesn't rule out a collision.
+
+=== Game state and persistence
+
+A game's entire state — the `Position` (board, history, transposition table, killer/history
+tables) plus a little web-layer bookkeeping (user's chosen color, search limit, move
+history for display) — lives only in the `web_server` process's memory, in a
+`HashMap<Uuid, Game>` behind a mutex. There is no database and no user accounts: a game is
+addressed purely by the `Uuid` returned when it was created, and it disappears if the
+process restarts. This is a deliberate scope decision (see
+<<section-architecture-constraints>>), not a gap the project intends to fill.
+
+=== User interface
+
+The frontend never re-implements chess rules: it asks the server which destinations are
+legal for a selected square and highlights exactly those, and it lets the server be the
+final word on whether a submitted move is legal. Moves can be made by click (select, then
+click a destination — clicking the same square deselects, clicking another own piece
+reselects) or by drag (tracked at the window level with a small pixel threshold before a
+drag counts as a drag). A move is applied optimistically on the client the instant it's
+submitted and rolled back — with a brief flash on the origin square — only if the server
+rejects it. The king's square is highlighted while `inCheck` is true on the live position.
+Move history can be scrubbed independently of the live game to review past positions.
+Promotion always auto-selects a queen; choosing the promotion piece is not exposed in the
+UI.
 
 === Development and CI/CD
 
-// TODO: test strategy, GitHub Actions pipeline, Docker build/publish flow.
+`board_backend` is tested directly (35+ `#[test]` functions across move generation, make/
+undo-move, search, the opening book, the Polyglot hash, and the transposition table), plus a
+perft test that checks generated node counts against the standard Chess Programming Wiki
+reference values for the starting position up to depth 5 — the strongest available
+correctness check for move generation, since a single missed or over-generated move at any
+depth changes the count. There is currently no CI job that runs these tests automatically;
+the only GitHub Actions workflow (`deploy.yml`) builds and deploys on every push to `main`
+without a gating test step (see <<section-risks-and-technical-debt>>).
