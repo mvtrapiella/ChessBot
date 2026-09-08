@@ -4,8 +4,6 @@
 include::src/config.adoc[]
 
 = Atlas — Architecture Documentation
-:revnumber: 0.1
-:revdate: Draft
 :toc-title: Table of Contents
 :toc: left
 :toclevels: 2
