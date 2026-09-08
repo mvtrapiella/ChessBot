@@ -22,31 +22,28 @@ body {
   max-width: 1000px;
 }
 
-/* ---- Title banner ---- */
+/* ---- Title banner ----
+   #header's own default padding-left/right (.9375em) plus its max-width cap
+   are what stop the banner from reaching the right edge; a vw-based
+   negative-margin "full bleed" trick doesn't work here because with
+   :toc: left, body has a padding-left equal to the fixed TOC sidebar's
+   width, so #header is centered in (viewport - sidebar), not in the full
+   viewport. Removing the max-width and the built-in side padding instead
+   lets #header's own width:100% (already set by the base stylesheet) fill
+   exactly the space to the right of the sidebar, all the way to the real
+   right edge of the screen. */
 #header > h1:first-child,
 #header .details {
   max-width: none;
 }
 
-#header::before {
-  content: "";
-}
-
 #header {
   position: relative;
-  margin: -1.2em -1.2em 1.5em -1.2em;
+  max-width: none;
+  margin: -1.2em 0 1.5em 0;
   padding: 2.4em 2em 1.8em 2em;
   background: linear-gradient(135deg, var(--aheader-bg) 0%, var(--aheader-bg-alt) 100%);
   border-bottom: 4px solid var(--aaccent);
-}
-
-@media (min-width: 768px) {
-  #header {
-    margin-left: calc(-50vw + 50%);
-    margin-right: calc(-50vw + 50%);
-    padding-left: calc(50vw - 50% + 2em);
-    padding-right: calc(50vw - 50% + 2em);
-  }
 }
 
 #header h1,
