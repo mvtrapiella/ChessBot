@@ -433,15 +433,211 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 #footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
 @media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
 </style>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231b1f2a'/%3E%3Ctext x='50' y='70' font-size='58' text-anchor='middle' fill='%23c9a24b'%3E%E2%99%9E%3C/text%3E%3C/svg%3E">
+<style>
+:root {
+  --abg: #faf7f0;
+  --abg-alt: #f1ecdf;
+  --atext: #2a2620;
+  --atext-muted: #6b6459;
+  --aheader-bg: #1b1f2a;
+  --aheader-bg-alt: #262c3b;
+  --aheader-text: #f5f1e6;
+  --aaccent: #b8863b;
+  --aaccent-strong: #8f6a2c;
+  --aborder: #ddd6c7;
+}
+
+body {
+  background: var(--abg);
+  color: var(--atext);
+}
+
+#header, #content, #footnotes, #footer {
+  max-width: 1000px;
+}
+
+/* ---- Title banner ---- */
+#header > h1:first-child,
+#header .details {
+  max-width: none;
+}
+
+#header::before {
+  content: "";
+}
+
+#header {
+  position: relative;
+  margin: -1.2em -1.2em 1.5em -1.2em;
+  padding: 2.4em 2em 1.8em 2em;
+  background: linear-gradient(135deg, var(--aheader-bg) 0%, var(--aheader-bg-alt) 100%);
+  border-bottom: 4px solid var(--aaccent);
+}
+
+@media (min-width: 768px) {
+  #header {
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    padding-left: calc(50vw - 50% + 2em);
+    padding-right: calc(50vw - 50% + 2em);
+  }
+}
+
+#header h1 {
+  color: var(--aheader-text);
+  font-family: "Noto Serif", Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  border-bottom: none;
+  margin-bottom: 0.2em;
+}
+
+#header .details {
+  color: var(--aaccent);
+  font-family: "Open Sans", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.78em;
+  letter-spacing: 0.12em;
+}
+
+#header .details span.author,
+#header .details span.revnumber,
+#header .details span.revdate,
+#header .details span.revremark {
+  color: var(--aaccent);
+}
+
+#toctitle {
+  color: var(--atext);
+  font-family: "Noto Serif", Georgia, serif;
+}
+
+/* ---- TOC sidebar (toc2 / toc=left) ---- */
+#toc.toc2 {
+  background: var(--abg-alt);
+  border-right: 1px solid var(--aborder);
+  padding: 1.4em 1.2em;
+}
+
+#toc.toc2 #toctitle {
+  font-size: 1.1em;
+  color: var(--aheader-bg);
+  border-bottom: 2px solid var(--aaccent);
+  padding-bottom: 0.4em;
+  margin-bottom: 0.6em;
+}
+
+#toc.toc2 ul.sectlevel1 > li > a {
+  font-weight: 600;
+  color: var(--atext);
+}
+
+#toc.toc2 ul a {
+  color: var(--atext-muted);
+  border-left: 2px solid transparent;
+  padding-left: 0.4em;
+  display: inline-block;
+}
+
+#toc.toc2 ul a:hover {
+  color: var(--aaccent-strong);
+  border-left-color: var(--aaccent);
+  background: rgba(184, 134, 59, 0.08);
+}
+
+/* ---- Headings ---- */
+h1, h2, h3, h4, h5 {
+  font-family: "Noto Serif", Georgia, serif;
+  color: #201d18;
+}
+
+/* :sectlinks: wraps heading text in <a class="link">, which the default
+   stylesheet colors more specifically (h2>a.link) than a plain h2 rule can
+   override, so it needs its own selector at the same specificity. */
+#content h1 > a.link, h2 > a.link, h3 > a.link, h4 > a.link, h5 > a.link,
+h1 > a.anchor, h2 > a.anchor, h3 > a.anchor, h4 > a.anchor, h5 > a.anchor {
+  color: inherit;
+  text-decoration: none;
+}
+
+.sect1 > h2 {
+  border-bottom: 2px solid var(--aaccent);
+  padding-bottom: 0.3em;
+  margin-top: 1.6em;
+}
+
+.sect2 h3 {
+  color: var(--aaccent-strong);
+}
+
+a {
+  color: var(--aaccent-strong);
+}
+
+a:hover {
+  color: var(--aaccent);
+}
+
+/* ---- Tables ---- */
+table.tableblock {
+  border: 1px solid var(--aborder);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+table.tableblock thead tr,
+table.tableblock tfoot tr {
+  background: var(--aheader-bg);
+}
+
+table.tableblock thead tr th,
+table.tableblock thead tr th * {
+  color: var(--aheader-text) !important;
+  font-family: "Open Sans", sans-serif;
+  text-transform: uppercase;
+  font-size: 0.82em;
+  letter-spacing: 0.04em;
+}
+
+table.tableblock tbody tr:nth-of-type(even) {
+  background: var(--abg-alt);
+}
+
+/* ---- Diagrams ---- */
+.imageblock img, .image img {
+  border: 1px solid var(--aborder);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0.6em;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- Misc ---- */
+code {
+  background: var(--abg-alt);
+  border-radius: 3px;
+}
+
+#footer {
+  background: var(--aheader-bg);
+  color: var(--aaccent);
+}
+
+#footer a {
+  color: var(--aheader-text);
+}
+</style>
 </head>
-<body class="article">
+<body class="article toc2 toc-left">
 <div id="header">
 <h1>Atlas — Architecture Documentation</h1>
 <div class="details">
 <span id="revnumber">version 0.1,</span>
 <span id="revdate">Draft</span>
 </div>
-<div id="toc" class="toc">
+<div id="toc" class="toc2">
 <div id="toctitle">Table of Contents</div>
 <ul class="sectlevel1">
 <li><a href="#section-introduction-and-goals">1. Introduction and Goals</a>
@@ -464,22 +660,43 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li><a href="#_whitebox_overall_system">5.1. Whitebox Overall System</a></li>
 </ul>
 </li>
-<li><a href="#section-runtime-view">6. Runtime View</a></li>
+<li><a href="#section-runtime-view">6. Runtime View</a>
+<ul class="sectlevel2">
+<li><a href="#_starting_a_new_game">6.1. Starting a new game</a></li>
+<li><a href="#_player_makes_a_move_bot_replies">6.2. Player makes a move, bot replies</a></li>
+<li><a href="#_undoing_a_turn">6.3. Undoing a turn</a></li>
+</ul>
+</li>
 <li><a href="#section-deployment-view">7. Deployment View</a>
 <ul class="sectlevel2">
 <li><a href="#_infrastructure">7.1. Infrastructure</a></li>
+<li><a href="#_deployment_pipeline">7.2. Deployment pipeline</a></li>
+<li><a href="#_certificate_bootstrap_and_selection">7.3. Certificate bootstrap and selection</a></li>
 </ul>
 </li>
 <li><a href="#section-concepts">8. Cross-cutting Concepts</a>
 <ul class="sectlevel2">
-<li><a href="#_search_and_evaluation">8.1. Search and Evaluation</a></li>
-<li><a href="#_opening_book">8.2. Opening Book</a></li>
-<li><a href="#_game_state_and_persistence">8.3. Game State and Persistence</a></li>
-<li><a href="#_user_interface">8.4. User Interface</a></li>
-<li><a href="#_development_and_cicd">8.5. Development and CI/CD</a></li>
+<li><a href="#_board_representation">8.1. Board representation</a></li>
+<li><a href="#_search_and_evaluation">8.2. Search and evaluation</a></li>
+<li><a href="#_move_ordering">8.3. Move ordering</a></li>
+<li><a href="#_transposition_table">8.4. Transposition table</a></li>
+<li><a href="#_repetition_detection">8.5. Repetition detection</a></li>
+<li><a href="#_opening_book">8.6. Opening book</a></li>
+<li><a href="#_game_state_and_persistence">8.7. Game state and persistence</a></li>
+<li><a href="#_user_interface">8.8. User interface</a></li>
+<li><a href="#_development_and_cicd">8.9. Development and CI/CD</a></li>
 </ul>
 </li>
-<li><a href="#section-architecture-decisions">9. Architecture Decisions</a></li>
+<li><a href="#section-architecture-decisions">9. Architecture Decisions</a>
+<ul class="sectlevel2">
+<li><a href="#_adr_1_hybrid_bitboard_mailbox_board_representation">9.1. ADR-1: Hybrid bitboard + mailbox board representation</a></li>
+<li><a href="#_adr_2_negamax_with_fail_soft_alpha_beta_and_quiescence_not_separate_minmax">9.2. ADR-2: Negamax with fail-soft alpha-beta and quiescence, not separate min/max</a></li>
+<li><a href="#_adr_3_bounded_fixed_size_transposition_table_instead_of_an_unbounded_map">9.3. ADR-3: Bounded, fixed-size transposition table instead of an unbounded map</a></li>
+<li><a href="#_adr_4_layered_move_ordering_signal_for_quiet_moves">9.4. ADR-4: Layered move-ordering signal for quiet moves</a></li>
+<li><a href="#_adr_5_embedded_polyglot_format_opening_book_with_a_from_scratch_format_compatible_zobrist_hash">9.5. ADR-5: Embedded Polyglot-format opening book with a from-scratch, format-compatible Zobrist hash</a></li>
+<li><a href="#_adr_6_single_free_tier_vm_images_built_in_ci_and_pulled_not_built_on_the_vm">9.6. ADR-6: Single free-tier VM, images built in CI and pulled, not built, on the VM</a></li>
+</ul>
+</li>
 <li><a href="#section-quality-requirements">10. Quality Requirements</a>
 <ul class="sectlevel2">
 <li><a href="#_quality_tree">10.1. Quality Tree</a></li>
@@ -499,143 +716,1423 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 </div>
 <div class="sect1">
-<h2 id="section-introduction-and-goals">1. Introduction and Goals</h2>
+<h2 id="section-introduction-and-goals"><a class="anchor" href="#section-introduction-and-goals"></a><a class="link" href="#section-introduction-and-goals">1. Introduction and Goals</a></h2>
 <div class="sectionbody">
-<div class="sect2">
-<h3 id="_requirements_overview">1.1. Requirements Overview</h3>
-
+<div class="paragraph">
+<p>Atlas is a chess engine written from scratch in Rust, exposed through a web API and played
+through a browser-based board. The project has two parts that are deliberately kept
+independent: <code>board_backend</code>, a dependency-free chess engine (board representation, move
+generation, search, evaluation, and an embedded opening book), and a thin web stack
+(<code>web_server</code>, an Axum HTTP API, and <code>webapp</code>, a React/Vite single-page frontend) that lets
+a human play against it.</p>
 </div>
 <div class="sect2">
-<h3 id="_quality_goals">1.2. Quality Goals</h3>
-
-</div>
-<div class="sect2">
-<h3 id="_stakeholders">1.3. Stakeholders</h3>
-<div style="page-break-after: always;"></div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="section-architecture-constraints">2. Architecture Constraints</h2>
-<div class="sectionbody">
-<div style="page-break-after: always;"></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="section-system-scope-and-context">3. System Scope and Context</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_business_context">3.1. Business Context</h3>
-
-</div>
-<div class="sect2">
-<h3 id="_technical_context">3.2. Technical Context</h3>
-<div style="page-break-after: always;"></div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="section-solution-strategy">4. Solution Strategy</h2>
-<div class="sectionbody">
-<div style="page-break-after: always;"></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="section-building-block-view">5. Building Block View</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_whitebox_overall_system">5.1. Whitebox Overall System</h3>
+<h3 id="_requirements_overview"><a class="anchor" href="#_requirements_overview"></a><a class="link" href="#_requirements_overview">1.1. Requirements Overview</a></h3>
 <div class="sect3">
-<h4 id="_board_backend_chess_engine">5.1.1. board_backend — Chess Engine</h4>
-
+<h4 id="_related_to_gameplay"><a class="anchor" href="#_related_to_gameplay"></a><a class="link" href="#_related_to_gameplay">1.1.1. Related to gameplay</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>A player must be able to play a full game of standard chess against the bot in a browser,
+from the initial position to checkmate, stalemate, the fifty-move rule, insufficient
+material, or threefold repetition.</p>
+</li>
+<li>
+<p>The player must be able to choose which side to play (White, Black, or a random
+assignment) before starting a game; if the bot moves first, that opening move is already
+present in the response that creates the game.</p>
+</li>
+<li>
+<p>The player must be able to choose the bot&#8217;s strength before starting a game: either a
+fixed search depth (1 to 6, via a spinner) or a "max difficulty" mode that gives the bot a
+fixed time budget per move instead of a fixed depth.</p>
+</li>
+<li>
+<p>Moves must be entered either by clicking a piece then a destination square, or by
+dragging the piece; the client asks the server which destinations are legal for the
+selected piece and highlights them.</p>
+</li>
+<li>
+<p>An illegal move attempt must be visibly rejected (a brief flash on the origin square) and
+must not change the board.</p>
+</li>
+<li>
+<p>The king must be visibly highlighted when it is in check.</p>
+</li>
+<li>
+<p>The player must be able to undo their last turn, which reverts both their own move and
+the bot&#8217;s reply to it.</p>
+</li>
+<li>
+<p>The player must be able to step back and forward through the move history to review past
+positions without affecting the live game.</p>
+</li>
+<li>
+<p>The player must be able to concede the game at any point (surrender).</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect3">
-<h4 id="_web_server_api">5.1.2. web_server — API</h4>
-
+<h4 id="_related_to_the_engine"><a class="anchor" href="#_related_to_the_engine"></a><a class="link" href="#_related_to_the_engine">1.1.2. Related to the engine</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>The engine must only ever produce legal moves, for itself and when validating the
+player&#8217;s moves.</p>
+</li>
+<li>
+<p>The engine must correctly detect check, checkmate, stalemate, the fifty-move rule,
+insufficient material, and threefold repetition.</p>
+</li>
+<li>
+<p>The engine must be able to consult a real opening book (a Polyglot-format book derived
+from grandmaster games) so that known openings are played instantly and idiomatically,
+without spending search time on them.</p>
+</li>
+</ul>
+</div>
 </div>
 <div class="sect3">
-<h4 id="_webapp_frontend">5.1.3. webapp — Frontend</h4>
+<h4 id="_related_to_the_web_layer"><a class="anchor" href="#_related_to_the_web_layer"></a><a class="link" href="#_related_to_the_web_layer">1.1.3. Related to the web layer</a></h4>
+<div class="ulist">
+<ul>
+<li>
+<p>The API must let a client create a game, fetch its current state, query legal moves for a
+square, submit a move, and undo the last turn.</p>
+</li>
+<li>
+<p>Game state is kept only for the lifetime of the server process; there is no user account
+system and no persistence layer.</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_quality_goals"><a class="anchor" href="#_quality_goals"></a><a class="link" href="#_quality_goals">1.2. Quality Goals</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Quality Goal</th>
+<th class="tableblock halign-left valign-top">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Functional suitability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The engine must never generate or accept an illegal move, and must correctly resolve
+every game-ending condition supported by the rules of chess. Move generation is checked
+against the standard perft reference values for the starting position up to depth 5.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Performance efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The whole stack (engine, API, and reverse proxy) is deployed on a single free-tier Google
+Cloud <code>e2-micro</code> VM (2 shared vCPUs, 1 GB RAM), shared between the backend, the frontend&#8217;s
+nginx, and certbot. The engine&#8217;s memory footprint is intentionally bounded (a fixed-size
+transposition table, not an unbounded cache) so a long-running game cannot grow without
+limit and exhaust that budget.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maintainability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The engine (<code>board_backend</code>) has zero external dependencies and no knowledge of HTTP,
+JSON, or game persistence; the web layer depends on the engine, never the reverse. This
+keeps the rules/search logic testable and reusable (e.g. from the CLI binary in <code>main.rs</code>)
+independently of how it&#8217;s served.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reliability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A game&#8217;s outcome must always be decided by the same rules the engine actually plays by —
+there is no separate "is this legal" check duplicated in the frontend; the client always
+asks the server for legal destinations and lets the server reject illegal moves.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_stakeholders"><a class="anchor" href="#_stakeholders"></a><a class="link" href="#_stakeholders">1.3. Stakeholders</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Role</th>
+<th class="tableblock halign-left valign-top">Who</th>
+<th class="tableblock halign-left valign-top">Expectations</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Owner / sole developer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Matías Valle Trapiella</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Designs, implements, tests, and deploys every part of the system; decides scope and
+priorities.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Players</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Anyone visiting the deployed site</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A playable, responsive chess board that behaves correctly and gives a bot opponent of a
+chosen strength, without needing to install anything or create an account.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">CI/CD pipeline</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GitHub Actions (<code>.github/workflows/deploy.yml</code>)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">On every push to <code>main</code>, builds and pushes the backend and frontend Docker images to
+GHCR, then deploys them to the production VM.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Deployment host</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A single Google Cloud <code>e2-micro</code> VM, reached over SSH from the CI pipeline</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Runs the production containers (<code>docker-compose.prod.yml</code>) continuously and reliably
+within its resource limits.</p></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="section-architecture-constraints"><a class="anchor" href="#section-architecture-constraints"></a><a class="link" href="#section-architecture-constraints">2. Architecture Constraints</a></h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Constraint</th>
+<th class="tableblock halign-left valign-top">Consequence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Solo developer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Every part of the system (engine, API, frontend, CI/CD, deployment) is designed,
+implemented, and operated by a single person. This favors a small number of simple,
+uniform tools over specialized ones for each concern (e.g. no separate message queue,
+no separate database, no dedicated observability stack).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single free-tier Google Cloud <code>e2-micro</code> VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The entire production deployment — reverse proxy, frontend static files, backend API, and
+certificate renewal — runs as Docker containers on one shared-core, 1 GB RAM VM. There is
+no headroom for an unbounded cache or a heavyweight database, which is why the engine&#8217;s
+transposition table is a fixed-size, bounded structure rather than an ever-growing map.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No database, no user accounts</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Game state lives only in the <code>web_server</code> process&#8217;s memory (a <code>HashMap&lt;Uuid, Game&gt;</code>) for
+as long as that process runs. A server restart loses every in-progress game. This is an
+accepted constraint, not an oversight: the project has no login system and no requirement
+to keep games across restarts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rust for the engine and API</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>board_backend</code> and <code>web_server</code> are both Rust, sharing the same <code>Move</code>/piece-code
+representation end-to-end (the frontend&#8217;s TypeScript mirrors those same numeric piece
+codes). <code>board_backend</code> itself declares zero external crate dependencies — it only uses the
+Rust standard library — which keeps the core rules/search logic small, fast to compile, and
+free of upstream churn.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GitHub Actions + GHCR as the only CI/CD path</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">There is a single workflow (<code>.github/workflows/deploy.yml</code>), triggered on push to <code>main</code>
+or manually. It builds both Docker images, pushes them to GitHub Container Registry, then
+SSHes into the production VM to pull and restart. There is no separate automated test/CI
+workflow — <code>cargo test</code> is run locally, not gated in CI.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">HTTPS via Let&#8217;s Encrypt on a free dynamic-DNS domain</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The deployed site&#8217;s domain, <code>atlas-chessbot.duckdns.org</code>, is a free DuckDNS subdomain
+pointed at the VM&#8217;s IP. Certificates are issued and renewed by a <code>certbot</code> container against
+that domain, which is a constraint on the nginx configuration (it must serve the ACME
+HTTP-01 challenge and fall back to a plain-HTTP config until a certificate exists — see
+<a href="#section-deployment-view">Deployment View</a>).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same-origin API, no CORS in production</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The frontend always calls a relative <code>/api</code> path, never an absolute host:port. In
+production, nginx reverse-proxies <code>/api/*</code> to the backend container so the browser only
+ever talks to one origin. <code>CorsLayer</code> in <code>web_server</code> exists purely to make local
+development (<code>cargo run</code> on port 3000 next to <code>npm run dev</code> on port 5173) work, not for
+production traffic.</p></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="section-system-scope-and-context"><a class="anchor" href="#section-system-scope-and-context"></a><a class="link" href="#section-system-scope-and-context">3. System Scope and Context</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_business_context"><a class="anchor" href="#_business_context"></a><a class="link" href="#_business_context">3.1. Business Context</a></h3>
+<div class="paragraph">
+<p>There is exactly one kind of external actor: a <strong>player</strong>, using a web browser. The player
+opens the site, picks a side and a bot strength, and plays a game move by move against
+Atlas. There are no other human roles (no admin, no accounts), and no external systems the
+business logic depends on — the only external-looking dependency is the opening book, which
+is a static file bundled into the engine binary at compile time, not a live service.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/context_component.png" alt="context component" width="636" height="268">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_technical_context"><a class="anchor" href="#_technical_context"></a><a class="link" href="#_technical_context">3.2. Technical Context</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 40%;">
+<col style="width: 40%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Channel</th>
+<th class="tableblock halign-left valign-top">Carries</th>
+<th class="tableblock halign-left valign-top">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Browser → webapp container (HTTPS, port 443)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The React single-page app&#8217;s static assets, then its own <code>fetch</code> calls back to the same
+origin.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Served by nginx; HTTP on port 80 redirects to HTTPS once a Let&#8217;s Encrypt certificate
+exists (see <a href="#section-deployment-view">Deployment View</a>).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">webapp → backend (<code>/api/*</code>, reverse-proxied)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">JSON requests/responses for the 5 REST endpoints (<code>POST /games</code>, <code>GET /games/{id}</code>,
+<code>GET /games/{id}/legal-moves/{square}</code>, <code>POST /games/{id}/move</code>, <code>POST /games/{id}/undo</code>).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">nginx rewrites <code>/api/xyz</code> to <code>/xyz</code> and forwards it to the <code>backend</code> container over the
+Docker network; the browser never talks to the backend directly. Locally, Vite&#8217;s dev
+server proxy plays the same role.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">backend → board_backend</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rust function calls within the same process — <code>Position::find_best_move</code>,
+<code>Position::apply_move_str</code>, <code>Board::all_legal_moves</code>, etc.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Not a network boundary: <code>board_backend</code> is a library crate the <code>web_server</code> binary links
+against, not a separate service.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">board_backend → opening book</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A parsed table of <code>(Zobrist key, move, weight)</code> entries.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>.bin</code> file is embedded into the compiled binary with <code>include_bytes!</code> at build time;
+there is no runtime file path, network call, or database involved.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>Everything to the right of the player in the diagram above runs on the same VM and inside
+the same Docker Compose project; there is no multi-host distribution and no other system
+this application integrates with.</p>
+</div>
+<div style="page-break-after: always;"></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="section-solution-strategy"><a class="anchor" href="#section-solution-strategy"></a><a class="link" href="#section-solution-strategy">4. Solution Strategy</a></h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Decision</th>
+<th class="tableblock halign-left valign-top">Rationale</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A dependency-free Rust engine, separate from the web layer</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>board_backend</code> has an empty <code>[dependencies]</code> section — board representation, move
+generation, search, and evaluation are all standard-library Rust. Keeping the engine free
+of web/serialization concerns means it can be exercised directly (the CLI binary in
+<code>main.rs</code>, and 35+ unit/perft tests) without spinning up any HTTP server, and it can be
+reused unchanged if the web layer ever changes.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bitboards + a mailbox array, not one or the other</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Board</code> keeps a <code>[u64; 12]</code> bitboard per piece type/color for fast set operations
+(attacks, occupancy) alongside a <code>[u8; 64]</code> mailbox for O(1) "what&#8217;s on this square"
+lookups, which move generation, notation, and the DTOs all need constantly. Magic
+bitboards (precomputed at compile time, with the magic numbers themselves found offline by
+the separate <code>magic_numbers</code> binary) make sliding-piece attack lookups a single array index
+instead of ray-tracing.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negamax with alpha-beta, quiescence search, and a bounded transposition table</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A single recursive <code>negamax</code> implementation (rather than separate min/max functions)
+keeps the search code and its optimizations (TT, move ordering) in one place. Quiescence
+search at the leaves avoids the horizon effect on captures. The transposition table is a
+fixed-size <code>Vec&lt;Option&lt;TTEntry&gt;&gt;</code> (65,536 entries, direct-mapped, depth-preferred
+replacement) rather than an unbounded <code>HashMap</code> specifically because the whole stack runs
+on a 1 GB VM — memory has to be bounded and predictable, not "capped eventually."</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An embedded, real opening book instead of book-less search from move one</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rather than spend search time reinventing well-known openings, <code>find_best_move</code> first
+checks a Polyglot-format book built from grandmaster games (<code>gm2001.bin</code>), compiled
+directly into the binary with <code>include_bytes!</code>. This needed a from-scratch,
+Polyglot-compatible Zobrist hash (independent of the engine&#8217;s own internal Zobrist scheme)
+and a remap for Polyglot&#8217;s quirk of encoding castling as the king "capturing" its own rook.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A thin Axum API with purely in-memory state</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>web_server</code> exists only to expose the engine over HTTP: it holds a
+<code>HashMap&lt;Uuid, Game&gt;</code> behind a mutex, translates JSON DTOs to/from the engine&#8217;s own types,
+and calls straight into <code>board_backend</code>. There is no database and no session/auth layer,
+because the project has no requirement to persist a game across a server restart or to
+identify a returning player.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A hand-built React board, no chess UI library</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The frontend renders the board, pieces, drag/click interactions, and move animation
+itself, using the same numeric piece-code convention as the backend rather than converting
+to/from a third-party library&#8217;s model. The client never re-implements legality: it asks the
+server for legal destinations and lets the server be the single source of truth for what&#8217;s
+allowed.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Same-origin traffic via nginx, not a public CORS-enabled API</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The frontend always calls a relative <code>/api</code> path. In production, nginx reverse-proxies
+that to the backend container over the Docker network, so the browser only ever sees one
+origin. This removes an entire class of CORS configuration from the production path; the
+<code>CorsLayer</code> in <code>web_server</code> only exists to support local development.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Container images built once in CI, deployed by pulling, not building on the VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GitHub Actions builds both Docker images and pushes them to GHCR; the VM only ever
+receives <code>docker-compose.prod.yml</code> (via <code>scp</code>) and runs <code>docker compose pull &amp;&amp; up -d</code>. The
+1 GB VM never has to run a Rust or Node build itself.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Let&#8217;s Encrypt over a free DuckDNS domain, with a self-selecting nginx config</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>atlas-chessbot.duckdns.org</code> is free, and certbot issues/renews the certificate against
+it. Since a certificate might not exist yet on a fresh deploy, an entrypoint script chooses
+between an HTTP-only nginx config and the HTTPS one depending on whether the certificate
+file is already present, instead of nginx refusing to start.</p></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="section-building-block-view"><a class="anchor" href="#section-building-block-view"></a><a class="link" href="#section-building-block-view">5. Building Block View</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_whitebox_overall_system"><a class="anchor" href="#_whitebox_overall_system"></a><a class="link" href="#_whitebox_overall_system">5.1. Whitebox Overall System</a></h3>
+<div class="paragraph">
+<p>The system is a Cargo workspace with three Rust crates plus one standalone frontend
+package. <code>web_server</code> is the only crate that depends on <code>board_backend</code> (as a path
+dependency); <code>board_backend</code> depends on nothing else in the workspace or outside the
+standard library; <code>magic_numbers</code> is an offline helper, not linked into either.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/level1.png" alt="level1" width="803" height="251">
+</div>
+</div>
+<div class="sect3">
+<h4 id="_board_backend_chess_engine"><a class="anchor" href="#_board_backend_chess_engine"></a><a class="link" href="#_board_backend_chess_engine">5.1.1. board_backend — Chess Engine</a></h4>
+<div class="paragraph">
+<p>The engine&#8217;s own <code>board</code> module is organized into four topic folders, all re-exported flat
+(<code>board::state</code>, <code>board::position</code>, <code>board::negamax</code>, &#8230;&#8203;) so the physical grouping below is
+an internal detail, not part of the public path:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/level2.png" alt="level2" width="567" height="392">
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Module</th>
+<th class="tableblock halign-left valign-top">Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>model</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The <code>Board</code> struct (bitboards + mailbox array + game-state flags) and the shared <code>Move</code>/
+<code>Color</code>/piece-code types every other module builds on. No behavior beyond basic mutators.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>movegen</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pseudo-legal move generation per piece type (including magic-bitboard sliding-piece
+attacks, precomputed at compile time), attack/check detection, and legality filtering
+(<code>all_legal_moves</code>) via a simulate-and-check-for-check approach.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>game</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>Position</code> — the container for a game in progress: the <code>Board</code>, its move history (for
+undo), the real-game position history (for repetition detection), and move-counting.
+Also owns FEN-free UCI-style move parsing (<code>apply_move_str</code>) and end-of-game detection
+(<code>game_status</code>).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>search</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Everything that decides <strong>what move to play</strong>: the negamax/alpha-beta/quiescence search,
+the static evaluation function, the transposition table, move ordering (TT move, MVV-LVA,
+killer moves, history heuristic), and the embedded Polyglot opening book.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_web_server_api"><a class="anchor" href="#_web_server_api"></a><a class="link" href="#_web_server_api">5.1.2. web_server — API</a></h4>
+<div class="paragraph">
+<p>A single Axum <code>Router</code> (<code>main.rs</code>) maps 5 REST endpoints to handlers in <code>handlers.rs</code>,
+which translate between the wire-format DTOs (<code>dto.rs</code>) and <code>board_backend</code> types, and
+store per-game state in an <code>AppState</code> (<code>state.rs</code>) — a <code>HashMap&lt;Uuid, Game&gt;</code> behind an
+<code>Arc&lt;Mutex&lt;_&gt;&gt;</code>, with no other persistence. <code>error.rs</code> maps the only two error cases
+(<code>NotFound</code>, <code>BadRequest</code>) to HTTP status codes. <code>notation.rs</code> renders simplified algebraic
+notation for the move history.</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_webapp_frontend"><a class="anchor" href="#_webapp_frontend"></a><a class="link" href="#_webapp_frontend">5.1.3. webapp — Frontend</a></h4>
+<div class="paragraph">
+<p>A React Router single-page app with two screens: <code>MainWindow</code> (pick side and bot strength,
+then create a game) and <code>GameWindow</code> (the live board). <code>GameWindow</code> owns all game
+interaction — click/drag moves, legal-move highlighting, check highlighting, illegal-move
+flashing, undo, and move-history scrubbing — through a small <code>fetch</code>-based API client
+(<code>api/gameApi.ts</code>) that mirrors the backend&#8217;s DTOs and always calls the relative <code>/api</code>
+path. The board itself (<code>game/board/Board.tsx</code>, <code>Cell.tsx</code>) is hand-built: no chess UI
+library, using the same numeric piece-code convention as <code>board_backend</code>.</p>
+</div>
 <div style="page-break-after: always;"></div>
 </div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="section-runtime-view">6. Runtime View</h2>
-<div class="sectionbody">
-<div style="page-break-after: always;"></div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="section-deployment-view">7. Deployment View</h2>
+<h2 id="section-runtime-view"><a class="anchor" href="#section-runtime-view"></a><a class="link" href="#section-runtime-view">6. Runtime View</a></h2>
 <div class="sectionbody">
 <div class="sect2">
-<h3 id="_infrastructure">7.1. Infrastructure</h3>
-<div style="page-break-after: always;"></div>
+<h3 id="_starting_a_new_game"><a class="anchor" href="#_starting_a_new_game"></a><a class="link" href="#_starting_a_new_game">6.1. Starting a new game</a></h3>
+<div class="paragraph">
+<p><code>POST /games</code> always creates the <code>Board</code>/<code>Position</code> and stores the game before responding.
+If the player chose to play the side that doesn&#8217;t move first (Black), the bot&#8217;s opening
+move is computed and applied <strong>before</strong> the response is sent, so the client already receives
+a board with White&#8217;s first move on it.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/runtime_create_game.png" alt="runtime create game" width="802" height="624">
 </div>
 </div>
-</div>
-<div class="sect1">
-<h2 id="section-concepts">8. Cross-cutting Concepts</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_search_and_evaluation">8.1. Search and Evaluation</h3>
-
-</div>
-<div class="sect2">
-<h3 id="_opening_book">8.2. Opening Book</h3>
-
 </div>
 <div class="sect2">
-<h3 id="_game_state_and_persistence">8.3. Game State and Persistence</h3>
-
+<h3 id="_player_makes_a_move_bot_replies"><a class="anchor" href="#_player_makes_a_move_bot_replies"></a><a class="link" href="#_player_makes_a_move_bot_replies">6.2. Player makes a move, bot replies</a></h3>
+<div class="paragraph">
+<p><code>POST /games/{id}/move</code> validates the move against the engine&#8217;s own legality check, applies
+it, and — unless the game just ended — immediately computes and applies the bot&#8217;s reply
+before responding. The client only ever sees the result of both half-moves at once; there
+is no separate "thinking" request.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/runtime_player_move.png" alt="runtime player move" width="774" height="856">
+</div>
+</div>
 </div>
 <div class="sect2">
-<h3 id="_user_interface">8.4. User Interface</h3>
-
+<h3 id="_undoing_a_turn"><a class="anchor" href="#_undoing_a_turn"></a><a class="link" href="#_undoing_a_turn">6.3. Undoing a turn</a></h3>
+<div class="paragraph">
+<p><code>POST /games/{id}/undo</code> is a "real" undo of engine state, not just the frontend forgetting a
+move: it rewinds both the bot&#8217;s last reply and the player&#8217;s move before it, by calling
+<code>Position::undo_move()</code> twice and manually trimming the repetition-history and move-counter
+bookkeeping that <code>undo_move()</code> itself doesn&#8217;t touch.</p>
 </div>
-<div class="sect2">
-<h3 id="_development_and_cicd">8.5. Development and CI/CD</h3>
-<div style="page-break-after: always;"></div>
-</div>
-</div>
-</div>
-<div class="sect1">
-<h2 id="section-architecture-decisions">9. Architecture Decisions</h2>
-<div class="sectionbody">
-<div style="page-break-after: always;"></div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/runtime_undo.png" alt="runtime undo" width="738" height="536">
 </div>
 </div>
-<div class="sect1">
-<h2 id="section-quality-requirements">10. Quality Requirements</h2>
-<div class="sectionbody">
-<div class="sect2">
-<h3 id="_quality_tree">10.1. Quality Tree</h3>
-
-</div>
-<div class="sect2">
-<h3 id="_quality_scenarios">10.2. Quality Scenarios</h3>
 <div style="page-break-after: always;"></div>
 </div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="section-risks-and-technical-debt">11. Risks and Technical Debt</h2>
+<h2 id="section-deployment-view"><a class="anchor" href="#section-deployment-view"></a><a class="link" href="#section-deployment-view">7. Deployment View</a></h2>
 <div class="sectionbody">
+<div class="sect2">
+<h3 id="_infrastructure"><a class="anchor" href="#_infrastructure"></a><a class="link" href="#_infrastructure">7.1. Infrastructure</a></h3>
+<div class="paragraph">
+<p>Production runs as four Docker containers, defined in <code>docker-compose.prod.yml</code>, on a
+single Google Cloud <code>e2-micro</code> VM reachable at <code>atlas-chessbot.duckdns.org</code> (a free DuckDNS
+domain pointed at the VM&#8217;s IP). The VM only ever holds that one compose file — it pulls
+prebuilt images rather than building from source.</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/deployment-lvl1.png" alt="deployment lvl1" width="914" height="528">
+</div>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Container</th>
+<th class="tableblock halign-left valign-top">Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>webapp</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>nginx:alpine</code> serving the built React SPA and reverse-proxying <code>/api/*</code> to <code>backend</code>.
+Publishes 80 and 443. Owns the two named volumes shared with <code>certbot</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>backend</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The Axum API (<code>web_server</code>), built from <code>debian:bookworm-slim</code>, running as an
+unprivileged user. Not published to the host — only reachable from <code>webapp</code> over the
+Docker network, by container name (<code>backend:3000</code>).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>certbot</code></p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Runs <code>certbot renew --webroot</code> on a loop (12-hour sleep), against the same volumes
+<code>webapp</code> reads the certificate from and serves the ACME challenge out of. Initial
+certificate issuance is a one-off manual step, not something this loop performs.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect2">
+<h3 id="_deployment_pipeline"><a class="anchor" href="#_deployment_pipeline"></a><a class="link" href="#_deployment_pipeline">7.2. Deployment pipeline</a></h3>
+<div class="paragraph">
+<p>Every push to <code>main</code> (or a manual trigger) runs <code>.github/workflows/deploy.yml</code>, which has
+two sequential jobs:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><strong><code>build-and-push</code></strong> — logs into GHCR, then builds and pushes the backend image
+(context: repo root, since <code>web_server</code> needs its sibling workspace crates available)
+and the webapp image (context: <code>webapp/</code>), both tagged <code>:latest</code>.</p>
+</li>
+<li>
+<p><strong><code>deploy</code></strong> — copies <code>docker-compose.prod.yml</code> to the VM over SCP, then over SSH runs
+<code>docker compose -f docker-compose.prod.yml pull &amp;&amp; up -d</code>. The VM&#8217;s SSH host, user, and
+key, and the <code>docker compose pull</code>/<code>up -d</code> step itself never touches source code —
+only the two already-built images.</p>
+</li>
+</ol>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_certificate_bootstrap_and_selection"><a class="anchor" href="#_certificate_bootstrap_and_selection"></a><a class="link" href="#_certificate_bootstrap_and_selection">7.3. Certificate bootstrap and selection</a></h3>
+<div class="paragraph">
+<p>A fresh container has no certificate yet, so nginx can&#8217;t simply be configured to require
+HTTPS from the start — it would refuse to start, referencing a file that doesn&#8217;t exist. An
+entrypoint script (<code>webapp/select-nginx-config.sh</code>) resolves this by checking, on every
+container start, whether <code>/etc/letsencrypt/live/atlas-chessbot.duckdns.org/fullchain.pem</code>
+is already present in the shared volume:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/deployment-https-flow.png" alt="deployment https flow" width="490" height="600">
+</div>
+</div>
+<div class="paragraph">
+<p>Both nginx configs proxy <code>/api/*</code> to <code>http://backend:3000</code> using an explicit <code>resolver
+127.0.0.11</code> (Docker&#8217;s embedded DNS) and a <code>set</code>-then-<code>rewrite &#8230;&#8203; break</code> pair, rather than a
+bare <code>proxy_pass</code> — this makes nginx resolve <code>backend</code> lazily on each request instead of
+failing to start if the <code>backend</code> container isn&#8217;t registered in Docker&#8217;s DNS yet at nginx&#8217;s
+own startup.</p>
+</div>
+<div style="page-break-after: always;"></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="section-concepts"><a class="anchor" href="#section-concepts"></a><a class="link" href="#section-concepts">8. Cross-cutting Concepts</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_board_representation"><a class="anchor" href="#_board_representation"></a><a class="link" href="#_board_representation">8.1. Board representation</a></h3>
+<div class="paragraph">
+<p><code>Board</code> combines a bitboard and a mailbox representation rather than picking one:
+a <code>[u64; 12]</code> array (one bitboard per piece type and color) supports fast set operations —
+attacks, occupancy checks — while a <code>[u8; 64]</code> mailbox array (one piece code per square,
+sized to exactly fill an L1 cache line) answers "what&#8217;s on this square" in O(1), which move
+generation, notation, and the API&#8217;s DTOs all need constantly. The mailbox is the source of
+truth for every mutation; the bitboards are derived from it. Sliding-piece (bishop, rook,
+queen) attacks are looked up via precomputed magic bitboards, built at compile time; the
+magic numbers themselves were found offline by the separate <code>magic_numbers</code> binary (a small
+pseudo-random search over candidate magics) and are not recomputed at runtime.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_search_and_evaluation"><a class="anchor" href="#_search_and_evaluation"></a><a class="link" href="#_search_and_evaluation">8.2. Search and evaluation</a></h3>
+<div class="paragraph">
+<p><code>find_best_move</code> first checks the opening book (below); only if it has no book move does it
+fall back to search.</p>
+</div>
+<div class="paragraph">
+<p>Search is a single recursive <code>negamax</code> function with fail-soft alpha-beta pruning, so both
+sides share one implementation instead of separate min/max functions. Two <code>SearchLimit</code>
+modes exist: <code>Depth(n)</code>, a single fixed-depth search (used for the 1–6 difficulty spinner),
+and <code>TimeBudget(duration)</code>, which performs iterative deepening — repeatedly calling the
+depth-limited search at depth 1, 2, 3, … until the time budget runs out, keeping the best
+move from the last depth that finished completely ("max difficulty" uses a 5-second
+budget). At <code>depth == 0</code>, a position that isn&#8217;t "stable" (any legal move is a capture or
+promotion) or that is in check drops into quiescence search instead of returning a static
+score directly, so the engine doesn&#8217;t misjudge a position in the middle of a capture
+sequence (the horizon effect).</p>
+</div>
+<div class="paragraph">
+<p>The static evaluator (<code>Board::evaluate</code>) scores material for both sides and returns the
+difference from the side-to-move&#8217;s perspective, tapering several terms between middlegame
+and endgame values based on a phase estimate (remaining knights/bishops/rooks/queens). Each
+piece type contributes a base value plus its own positional terms:</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Piece</th>
+<th class="tableblock halign-left valign-top">Positional terms modeled</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Pawn</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Piece-square table, a tapered passed-pawn bonus (scaled by how far advanced), an isolated-
+pawn penalty, a doubled-pawn penalty.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Knight</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Piece-square table only.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bishop</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Piece-square table, a mobility bonus, a "bad bishop" penalty for own pawns on the
+bishop&#8217;s square color, plus a bishop-pair bonus (once per side).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Rook</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Piece-square table, an open/semi-open-file bonus, a 7th-rank bonus, a mobility bonus, a
+"trapped in the home corner behind its own king and a pawn" penalty, an "still on its home
+square after move 24" undeveloped-rook penalty, and a connected-rooks bonus (once per
+side).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Queen</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Piece-square table, a mobility bonus, a bonus for sharing a file/rank with the enemy king
+or sitting on the 7th/2nd rank, and an "early queen" penalty — brought out before move 20
+while the side&#8217;s own minor pieces are still undeveloped.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">King</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A tapered piece-square table (rewarding castled corners in the middlegame, centralization
+in the endgame), a pawn-shield penalty (missing pawns in front of a castled king, only while
+enough material remains on the board for an attack), and a "hasn&#8217;t castled and has lost both
+castling rights before move 30" penalty.</p></td>
+</tr>
+</tbody>
+</table>
+<div class="paragraph">
+<p>There is no general mobility term for every piece, no king-safety scoring beyond the two
+terms above, and no pawn-chain/pawn-storm modeling beyond passed/isolated/doubled — the
+evaluation is deliberately a fixed, hand-tuned set of terms rather than a tuned/tapeable
+weight vector.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_move_ordering"><a class="anchor" href="#_move_ordering"></a><a class="link" href="#_move_ordering">8.3. Move ordering</a></h3>
+<div class="paragraph">
+<p>Alpha-beta&#8217;s effectiveness depends on searching the most promising move first. Moves at
+each node are sorted by a <code>(category, tiebreak)</code> key, highest category first, so the
+category ordering never depends on tuning any one signal&#8217;s numeric range:</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>The move stored in the transposition table for this position, if any.</p>
+</li>
+<li>
+<p>Captures, ranked by MVV-LVA (<code>victim value * 10 - attacker rank</code>, where attacker rank is
+a small 1–5 ordinal scale rather than the attacker&#8217;s own point value, so a real capture
+can never be scored below a quiet move).</p>
+</li>
+<li>
+<p>Killer moves — up to 2 quiet moves per ply that most recently caused a beta cutoff at
+that same ply, tried early because a tactical theme that works in one branch often
+recurs in a sibling at the same depth.</p>
+</li>
+<li>
+<p>Everything else, ranked by the history heuristic — a <code>[64][64]</code> table of origin/
+destination scores, incremented whenever a quiet move causes a cutoff anywhere in the
+tree (weighted by depth squared), and never cleared.</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>Quiescence search reuses none of this — it only ever explores captures/promotions/
+evasions, ordered by plain MVV-LVA, since there&#8217;s no meaningful "killer" or "history" concept
+for a search that never reaches a quiet leaf.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_transposition_table"><a class="anchor" href="#_transposition_table"></a><a class="link" href="#_transposition_table">8.4. Transposition table</a></h3>
+<div class="paragraph">
+<p>A fixed-size, direct-mapped table (<code>Vec&lt;Option&lt;TTEntry&gt;&gt;</code>, 65,536 entries, indexed by
+<code>hash &amp; (SIZE - 1)</code>) rather than an unbounded map — deliberately bounded because the whole
+stack runs on a 1 GB VM. Each entry stores its full 64-bit key (to detect index collisions,
+which are new with a fixed-size table and distinct from true hash collisions), the depth it
+was searched to, a score, a bound type (exact / lower / upper), and the best move found.
+Replacement is depth-preferred: a new entry always overwrites an empty slot or one holding a
+different position, and overwrites a same-position entry only if searched at least as deep.
+The table persists for the lifetime of a game (not cleared between moves), so deeper
+iterative-deepening passes and later moves in the same game keep benefiting from earlier
+search work.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_repetition_detection"><a class="anchor" href="#_repetition_detection"></a><a class="link" href="#_repetition_detection">8.5. Repetition detection</a></h3>
+<div class="paragraph">
+<p>Two separate hash lists exist because they answer different questions. <code>position_history</code>
+records the Zobrist hash of every position actually reached in the real game, pushed once
+per real move; it drives both <code>game_status()&#8217;s threefold-repetition check (three
+occurrences) and, inside search, an early cutoff. `search_path_hashes</code> records the hashes
+along the <strong>current, hypothetical</strong> search branch only, pushed/popped as the search recurses
+and cleared at the start of every <code>find_best_move</code> call — this exists because the
+transposition table gets overwritten with hypothetical positions from search, so it can&#8217;t
+be used to answer "would this be a repetition in the game actually being played." Inside
+<code>negamax</code>, reaching a position that already occurred once (summed across both lists) scores
+it as an immediate draw, before even probing the transposition table — deliberately, since
+whether a position is a repetition is path-dependent, and that result must never be written
+into the (path-independent) transposition table.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_opening_book"><a class="anchor" href="#_opening_book"></a><a class="link" href="#_opening_book">8.6. Opening book</a></h3>
+<div class="paragraph">
+<p><code>find_best_move</code> consults an embedded Polyglot-format book (<code>gm2001.bin</code>, built from
+grandmaster games) before doing any search at all, for as long as the game is within its
+first 20 plies. The book file is compiled directly into the binary with <code>include_bytes!</code>,
+so there&#8217;s no runtime file path or I/O. Looking up a move requires a Polyglot-compatible
+Zobrist hash — a from-scratch implementation, deliberately independent of the engine&#8217;s own
+internal Zobrist scheme, using Polyglot&#8217;s own published random constants so the hash is
+byte-for-byte compatible with any standard Polyglot book, not just shape-compatible. Two
+details this needed to get right: Polyglot&#8217;s en-passant hashing rule only counts the file if
+an enemy pawn could actually capture there right now (not merely because the engine&#8217;s own
+<code>en_passant_square</code> field is set), and Polyglot encodes castling as the king "capturing" its
+own rook (e.g. e1h1 for White short castle) rather than the king&#8217;s actual landing square —
+the four unambiguous origin/destination pairs are remapped before the move is used. Every
+book move is re-validated against the engine&#8217;s own legal-move list before being played, since
+a hash match alone doesn&#8217;t rule out a collision.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_game_state_and_persistence"><a class="anchor" href="#_game_state_and_persistence"></a><a class="link" href="#_game_state_and_persistence">8.7. Game state and persistence</a></h3>
+<div class="paragraph">
+<p>A game&#8217;s entire state — the <code>Position</code> (board, history, transposition table, killer/history
+tables) plus a little web-layer bookkeeping (user&#8217;s chosen color, search limit, move
+history for display) — lives only in the <code>web_server</code> process&#8217;s memory, in a
+<code>HashMap&lt;Uuid, Game&gt;</code> behind a mutex. There is no database and no user accounts: a game is
+addressed purely by the <code>Uuid</code> returned when it was created, and it disappears if the
+process restarts. This is a deliberate scope decision (see
+<a href="#section-architecture-constraints">Architecture Constraints</a>), not a gap the project intends to fill.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_user_interface"><a class="anchor" href="#_user_interface"></a><a class="link" href="#_user_interface">8.8. User interface</a></h3>
+<div class="paragraph">
+<p>The frontend never re-implements chess rules: it asks the server which destinations are
+legal for a selected square and highlights exactly those, and it lets the server be the
+final word on whether a submitted move is legal. Moves can be made by click (select, then
+click a destination — clicking the same square deselects, clicking another own piece
+reselects) or by drag (tracked at the window level with a small pixel threshold before a
+drag counts as a drag). A move is applied optimistically on the client the instant it&#8217;s
+submitted and rolled back — with a brief flash on the origin square — only if the server
+rejects it. The king&#8217;s square is highlighted while <code>inCheck</code> is true on the live position.
+Move history can be scrubbed independently of the live game to review past positions.
+Promotion always auto-selects a queen; choosing the promotion piece is not exposed in the
+UI.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_development_and_cicd"><a class="anchor" href="#_development_and_cicd"></a><a class="link" href="#_development_and_cicd">8.9. Development and CI/CD</a></h3>
+<div class="paragraph">
+<p><code>board_backend</code> is tested directly (35+ <code>#[test]</code> functions across move generation, make/
+undo-move, search, the opening book, the Polyglot hash, and the transposition table), plus a
+perft test that checks generated node counts against the standard Chess Programming Wiki
+reference values for the starting position up to depth 5 — the strongest available
+correctness check for move generation, since a single missed or over-generated move at any
+depth changes the count. There is currently no CI job that runs these tests automatically;
+the only GitHub Actions workflow (<code>deploy.yml</code>) builds and deploys on every push to <code>main</code>
+without a gating test step (see <a href="#section-risks-and-technical-debt">Risks and Technical Debt</a>).</p>
+</div>
+<div style="page-break-after: always;"></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="section-architecture-decisions"><a class="anchor" href="#section-architecture-decisions"></a><a class="link" href="#section-architecture-decisions">9. Architecture Decisions</a></h2>
+<div class="sectionbody">
+<div class="paragraph">
+<p>Recorded as arc42-style short ADRs, most recent last.</p>
+</div>
+<div class="sect2">
+<h3 id="_adr_1_hybrid_bitboard_mailbox_board_representation"><a class="anchor" href="#_adr_1_hybrid_bitboard_mailbox_board_representation"></a><a class="link" href="#_adr_1_hybrid_bitboard_mailbox_board_representation">9.1. ADR-1: Hybrid bitboard + mailbox board representation</a></h3>
+<div class="paragraph">
+<p><strong>Status</strong>: Accepted.</p>
+</div>
+<div class="paragraph">
+<p><strong>Context</strong>: Move generation needs fast set operations (attacks, occupancy), while notation,
+the API&#8217;s DTOs, and check detection need fast "what piece is on this square" lookups.</p>
+</div>
+<div class="paragraph">
+<p><strong>Decision</strong>: <code>Board</code> keeps both a <code>[u64; 12]</code> bitboard array and a <code>[u8; 64]</code> mailbox array,
+with the mailbox as the source of truth that bitboards are derived from. Sliding-piece
+attacks use precomputed magic bitboards; the magic numbers were found offline by a separate
+<code>magic_numbers</code> binary (a small pseudo-random search) rather than computed at build or run
+time.</p>
+</div>
+<div class="paragraph">
+<p><strong>Consequences</strong>: Every move must keep both representations consistent (handled centrally in
+<code>make_move</code>/<code>undo_move</code>); in exchange, both move generation and the web/notation layer get
+the access pattern each actually needs, and sliding-piece attacks are a single array lookup.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_adr_2_negamax_with_fail_soft_alpha_beta_and_quiescence_not_separate_minmax"><a class="anchor" href="#_adr_2_negamax_with_fail_soft_alpha_beta_and_quiescence_not_separate_minmax"></a><a class="link" href="#_adr_2_negamax_with_fail_soft_alpha_beta_and_quiescence_not_separate_minmax">9.2. ADR-2: Negamax with fail-soft alpha-beta and quiescence, not separate min/max</a></h3>
+<div class="paragraph">
+<p><strong>Status</strong>: Accepted.</p>
+</div>
+<div class="paragraph">
+<p><strong>Context</strong>: A search algorithm was needed that both sides could share without duplicating
+logic for "maximizing" vs "minimizing" player.</p>
+</div>
+<div class="paragraph">
+<p><strong>Decision</strong>: A single recursive <code>negamax</code> function, always evaluated from the side-to-move&#8217;s
+perspective and negated on return, with alpha-beta pruning and a quiescence search at
+unstable leaves (any leaf that&#8217;s in check or has a capture/promotion available) to avoid the
+horizon effect.</p>
+</div>
+<div class="paragraph">
+<p><strong>Consequences</strong>: One code path to optimize and test instead of two; all further search
+improvements (transposition table, move ordering) plug into this single function.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_adr_3_bounded_fixed_size_transposition_table_instead_of_an_unbounded_map"><a class="anchor" href="#_adr_3_bounded_fixed_size_transposition_table_instead_of_an_unbounded_map"></a><a class="link" href="#_adr_3_bounded_fixed_size_transposition_table_instead_of_an_unbounded_map">9.3. ADR-3: Bounded, fixed-size transposition table instead of an unbounded map</a></h3>
+<div class="paragraph">
+<p><strong>Status</strong>: Accepted (supersedes an earlier <code>HashMap&lt;u64, TTEntry&gt;</code>).</p>
+</div>
+<div class="paragraph">
+<p><strong>Context</strong>: The original transposition table was a plain <code>HashMap</code>, with no size bound and no
+eviction, never cleared between moves or between iterative-deepening depths. Since a
+<code>Position</code> persists for a whole game on the web server, and the whole stack is deployed on a
+single 1 GB <code>e2-micro</code> VM shared with nginx and certbot, unbounded growth here was a real
+operational risk, not a theoretical one.</p>
+</div>
+<div class="paragraph">
+<p><strong>Decision</strong>: Replace it with <code>Vec&lt;Option&lt;TTEntry&gt;&gt;</code> of a fixed size (65,536 entries,
+~1.5 MB), indexed by <code>hash &amp; (SIZE - 1)</code>, with depth-preferred replacement and the full key
+stored in each entry to detect index collisions. <code>Vec&lt;Option&lt;TTEntry&gt;&gt;</code>, constructed via
+<code>vec![None; SIZE]</code>, was chosen over a fixed-size array field or <code>Box&lt;[Option&lt;TTEntry&gt;; SIZE]&gt;</code>:
+an inline array field of that size would make every move or return of a <code>Position</code> (or a
+<code>Game</code> holding one) copy the full buffer, and constructing the array literal risks
+materializing it on the stack first in a debug build before it&#8217;s moved to its final
+location, which Rust does not guarantee against; a boxed fixed-size array would be a more
+precise type-level match (heap-allocated and incapable of resizing) but changes no actual
+runtime behavior, since <code>tt_index()</code> already forces every access into bounds via the
+bitmask — and safely constructing one without the same stack-materialization risk requires
+routing through a <code>Vec</code> anyway. <code>Vec::vec![None; SIZE]</code> is the direct, safe, idiomatic
+choice.</p>
+</div>
+<div class="paragraph">
+<p><strong>Consequences</strong>: Memory is now bounded and predictable regardless of game length or how many
+iterative-deepening depths run. The table can no longer hold more entries than
+<code>TT_SIZE</code>, so two different positions that hash to the same index will evict each other
+(mitigated, not eliminated, by depth-preferred replacement).</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_adr_4_layered_move_ordering_signal_for_quiet_moves"><a class="anchor" href="#_adr_4_layered_move_ordering_signal_for_quiet_moves"></a><a class="link" href="#_adr_4_layered_move_ordering_signal_for_quiet_moves">9.4. ADR-4: Layered move-ordering signal for quiet moves</a></h3>
+<div class="paragraph">
+<p><strong>Status</strong>: Accepted.</p>
+</div>
+<div class="paragraph">
+<p><strong>Context</strong>: <code>order_moves</code> (used only in quiescence search) is pure MVV-LVA, which scores
+every non-capture move identically at <code>0</code>. Since the majority of moves in a typical
+position are quiet, this left alpha-beta with no ordering signal for most of the tree, and
+the transposition table&#8217;s own recommended move was only ever used for score cutoffs, never
+to inform ordering when a cutoff wasn&#8217;t available.</p>
+</div>
+<div class="paragraph">
+<p><strong>Decision</strong>: Add <code>order_moves_at_node</code>, used only in the main negamax search (not
+quiescence), ranking moves by a <code>(category, tiebreak)</code> key: the transposition table&#8217;s move
+first, then captures (existing MVV-LVA), then killer moves (2 per ply, recorded on a beta
+cutoff), then the history heuristic (a <code>[64][64]</code> table incremented on cutoffs, weighted by
+depth squared, never cleared). Using a <code>(category, tiebreak)</code> tuple rather than one blended
+numeric score means the category ordering never depends on tuning any individual signal&#8217;s
+numeric range.</p>
+</div>
+<div class="paragraph">
+<p><strong>Consequences</strong>: Quiet moves that have previously caused cutoffs are now tried earlier,
+which should reduce nodes searched for the same result; quiescence search deliberately keeps
+using the older, simpler <code>order_moves</code>, since it never reaches a quiet leaf and so has no
+use for killers or history.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_adr_5_embedded_polyglot_format_opening_book_with_a_from_scratch_format_compatible_zobrist_hash"><a class="anchor" href="#_adr_5_embedded_polyglot_format_opening_book_with_a_from_scratch_format_compatible_zobrist_hash"></a><a class="link" href="#_adr_5_embedded_polyglot_format_opening_book_with_a_from_scratch_format_compatible_zobrist_hash">9.5. ADR-5: Embedded Polyglot-format opening book with a from-scratch, format-compatible Zobrist hash</a></h3>
+<div class="paragraph">
+<p><strong>Status</strong>: Accepted.</p>
+</div>
+<div class="paragraph">
+<p><strong>Context</strong>: Without a book, the engine re-derives well-known opening theory by search alone
+every game, spending time and occasionally choosing a weaker or more easily-refuted line
+than known theory.</p>
+</div>
+<div class="paragraph">
+<p><strong>Decision</strong>: Embed a real, standard Polyglot-format book (<code>gm2001.bin</code>, built from
+grandmaster games) directly into the binary via <code>include_bytes!</code>, and implement Polyglot&#8217;s
+own hash function from scratch — using its published random constants — rather than reusing
+the engine&#8217;s own internal Zobrist scheme, so the hash is compatible with any standard
+Polyglot book, not merely shaped like one. Values were independently verified against
+`python-chess&#8217;s own Polyglot hash implementation. Polyglot&#8217;s castling encoding (the king
+"capturing" its own rook) is remapped to this engine&#8217;s own representation (the king&#8217;s actual
+landing square) before a book move is used, and every book move is re-validated against the
+engine&#8217;s real legal-move list before being returned.</p>
+</div>
+<div class="paragraph">
+<p><strong>Consequences</strong>: Opening play matches known theory and is effectively free (no search); the
+engine now carries two independent Zobrist implementations (its own, and Polyglot&#8217;s) that
+must not be conflated, and the book is bounded to the first 20 plies as a backstop even
+though real book coverage usually runs out earlier.</p>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_adr_6_single_free_tier_vm_images_built_in_ci_and_pulled_not_built_on_the_vm"><a class="anchor" href="#_adr_6_single_free_tier_vm_images_built_in_ci_and_pulled_not_built_on_the_vm"></a><a class="link" href="#_adr_6_single_free_tier_vm_images_built_in_ci_and_pulled_not_built_on_the_vm">9.6. ADR-6: Single free-tier VM, images built in CI and pulled, not built, on the VM</a></h3>
+<div class="paragraph">
+<p><strong>Status</strong>: Accepted.</p>
+</div>
+<div class="paragraph">
+<p><strong>Context</strong>: As a solo project with no budget, the deployment target had to be free-tier and
+resource-constrained (a Google Cloud <code>e2-micro</code> VM: shared vCPU, 1 GB RAM), which rules out
+building Rust or Node projects directly on the VM as part of deployment.</p>
+</div>
+<div class="paragraph">
+<p><strong>Decision</strong>: GitHub Actions builds both Docker images and pushes them to GHCR on every push
+to <code>main</code>; the VM only ever receives <code>docker-compose.prod.yml</code> (via <code>scp</code>) and runs
+<code>docker compose pull &amp;&amp; up -d</code> over SSH. Production HTTPS is obtained via Let&#8217;s Encrypt
+against a free DuckDNS domain (<code>atlas-chessbot.duckdns.org</code>), with nginx self-selecting
+between an HTTP-only and an HTTPS config depending on whether a certificate is already
+present, so a certificate-less first boot doesn&#8217;t prevent nginx from starting.</p>
+</div>
+<div class="paragraph">
+<p><strong>Consequences</strong>: The VM never needs a Rust/Node toolchain and stays lightweight; deployment
+depends on GHCR and GitHub Actions being available, and on the DuckDNS record continuing to
+point at the VM&#8217;s IP for certificate renewal to keep working.</p>
+</div>
+<div style="page-break-after: always;"></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="section-quality-requirements"><a class="anchor" href="#section-quality-requirements"></a><a class="link" href="#section-quality-requirements">10. Quality Requirements</a></h2>
+<div class="sectionbody">
+<div class="sect2">
+<h3 id="_quality_tree"><a class="anchor" href="#_quality_tree"></a><a class="link" href="#_quality_tree">10.1. Quality Tree</a></h3>
+<div class="paragraph">
+<p>Breaking the four quality goals from <a href="#section-introduction-and-goals">Introduction and Goals</a> down into the
+concrete properties they actually mean for this system:</p>
+</div>
+<div class="imageblock">
+<div class="content">
+<img src="./images/quality_tree.png" alt="quality tree" width="642" height="1069">
+</div>
+</div>
+</div>
+<div class="sect2">
+<h3 id="_quality_scenarios"><a class="anchor" href="#_quality_scenarios"></a><a class="link" href="#_quality_scenarios">10.2. Quality Scenarios</a></h3>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 14.2857%;">
+<col style="width: 14.2857%;">
+<col style="width: 42.8571%;">
+<col style="width: 28.5715%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">#</th>
+<th class="tableblock halign-left valign-top">Quality Goal</th>
+<th class="tableblock halign-left valign-top">Scenario</th>
+<th class="tableblock halign-left valign-top">Verification</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QS-1</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Functional suitability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Move generation is run from the standard starting position to depths 1 through 5.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>perft_matches_known_values_for_starting_position</code> asserts the exact node counts from
+the Chess Programming Wiki reference (20, 400, 8,902, 197,281, 4,865,609) — any illegal or
+missing move at any depth would change these counts.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QS-2</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Functional suitability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A position is set up where a move exists that immediately checkmates the opponent.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>finds_mate_in_one</code> asserts <code>find_best_move</code> returns exactly that move at depth 1.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QS-3</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Functional suitability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A position is set up with no legal moves and the side to move not in check.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>recognizes_stalemate_as_a_draw</code> asserts the legal-move list is empty, the side to move
+is not in check, <code>find_best_move</code> returns <code>None</code>, and <code>negamax</code> scores the position <code>0</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QS-4</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Performance efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A game is played long enough, or searched deep enough, to fill the transposition table
+past its fixed capacity.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The table can never grow past <code>TT_SIZE</code> entries (~1.5 MB) — <code>tt_store&#8217;s replacement
+policy always fits a new entry into an existing slot rather than allocating more, verified
+by `tt_store_overwrites_on_index_collision_regardless_of_depth</code> and
+<code>tt_store_keeps_deeper_entry_on_same_key</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QS-5</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Performance efficiency</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The bot is asked to move under <code>SearchLimit::TimeBudget</code> (the "max difficulty" mode).</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iterative deepening in <code>find_best_move</code> checks the deadline every <code>NODE_CHECK_INTERVAL</code>
+(2048) nodes and keeps only the last <strong>completed</strong> depth&#8217;s result, so a search that runs out
+of time mid-depth still returns a legal move rather than blocking past its budget.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QS-6</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Maintainability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A change is needed to the search or evaluation logic.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">It can be made, and its unit tests run, entirely within <code>board_backend</code> — confirmed by
+<code>board_backend&#8217;s empty `[dependencies]</code> list, which means no web/serialization crate ever
+needs to be touched or recompiled for an engine-only change.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">QS-7</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Reliability</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A client attempts a move that isn&#8217;t legal in the current position.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>apply_move_str</code> validates against <code>Board::all_legal_moves()</code> before mutating any state
+and returns an error the API turns into <code>400 Bad Request</code>; the frontend never applies such
+a move to the live game (only an optimistic preview, rolled back on rejection).</p></td>
+</tr>
+</tbody>
+</table>
+<div style="page-break-after: always;"></div>
+</div>
+</div>
+</div>
+<div class="sect1">
+<h2 id="section-risks-and-technical-debt"><a class="anchor" href="#section-risks-and-technical-debt"></a><a class="link" href="#section-risks-and-technical-debt">11. Risks and Technical Debt</a></h2>
+<div class="sectionbody">
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 16.6666%;">
+<col style="width: 50%;">
+<col style="width: 33.3334%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Risk / Debt</th>
+<th class="tableblock halign-left valign-top">Description</th>
+<th class="tableblock halign-left valign-top">Accepted mitigation (if any)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Single VM, single point of failure</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The whole stack — reverse proxy, frontend, backend, and certificate renewal — runs on one
+<code>e2-micro</code> VM. If that VM goes down, is redeployed, or is out of resources, the whole site
+is unavailable; there is no redundancy or failover.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None beyond <code>restart: unless-stopped</code> on each container, which recovers from a crashed
+container but not from the VM itself being unavailable.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">All game state is lost on every deploy</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Games live only in the <code>web_server</code> process&#8217;s memory. Every push to <code>main</code> triggers
+<code>docker compose pull &amp;&amp; up -d</code> on the VM, which recreates the <code>backend</code> container — ending
+every in-progress game with no warning to the player.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Accepted scope decision (no database, no accounts) documented in
+<a href="#section-architecture-constraints">Architecture Constraints</a>; not currently mitigated for players mid-game during a
+deploy.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No automated tests in CI</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>.github/workflows/deploy.yml</code> builds and deploys on every push to <code>main</code> without running
+<code>cargo test</code> first. The 35+ unit/perft tests that do exist (see
+<a href="#section-quality-requirements">Quality Requirements</a>) only run when a developer remembers to run them locally
+before pushing.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None yet — a straightforward addition would be a test job that must pass before
+<code>build-and-push</code> runs.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No rate limiting or abuse protection on the public API</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>POST /games</code> and <code>POST /games/{id}/move</code> can trigger a "max difficulty" (5-second
+time-budget) search on request, with no authentication and no request throttling. A modest
+number of concurrent max-difficulty requests could saturate the VM&#8217;s shared vCPUs and
+degrade the site for every other player.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None currently in the API or nginx layer.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Certificate renewal depends on the domain still pointing at the VM</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>atlas-chessbot.duckdns.org</code> is a manually-configured DuckDNS record. Nothing in the
+repository automatically keeps that record updated if the VM&#8217;s IP address changes; the
+<code>certbot</code> container&#8217;s renewal loop only re-issues against whatever the domain currently
+resolves to, and issuance/renewal would silently start failing if the record went stale.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">None found in the repo — this would need to be handled outside the codebase (a static IP
+reservation and/or a DuckDNS update script), if not already done manually.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Direct-mapped transposition table can suffer index collisions</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The transposition table has a fixed number of slots (65,536); two unrelated positions
+that hash to the same index will evict each other, with depth-preferred replacement only
+partially mitigating this (see ADR-3). This is an inherent trade-off of a fixed-size table,
+not a bug, and is standard practice in chess engines — but it does mean search occasionally
+loses a useful cached result it would have kept with an unbounded table.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Depth-preferred replacement policy (<code>tt_store</code>); size chosen (~1.5 MB) to leave comfortable
+headroom in the 1 GB VM budget rather than to minimize collisions.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No null-move pruning, PVS, late move reductions, or aspiration windows</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The search is "plain" alpha-beta with quiescence, a transposition table, and layered move
+ordering (TT move, MVV-LVA, killers, history) — it does not yet include several standard
+techniques that would let it search deeper in the same time. This was a deliberate scope cut
+when the transposition table and move-ordering work was planned, not an oversight.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Explicitly deferred as future work, not attempted.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">No disambiguation in generated algebraic notation</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock"><code>describe_move</code> (in <code>web_server::notation</code>) does not disambiguate two identical pieces
+that could both reach the same destination square (e.g. two knights able to reach the same
+square both render as <code>Nf3</code>, never <code>N1f3</code>/<code>N5f3</code>). This only affects the human-readable move
+history text, not game logic or legality.</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Explicit code comment acknowledging the simplification; not fixed, since it&#8217;s cosmetic for
+a casual UI.</p></td>
+</tr>
+</tbody>
+</table>
 <div style="page-break-after: always;"></div>
 </div>
 </div>
 <div class="sect1">
-<h2 id="section-glossary">12. Glossary</h2>
+<h2 id="section-glossary"><a class="anchor" href="#section-glossary"></a><a class="link" href="#section-glossary">12. Glossary</a></h2>
 <div class="sectionbody">
-
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 25%;">
+<col style="width: 75%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">Term</th>
+<th class="tableblock halign-left valign-top">Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Ply</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A single move by one side (a "half-move"). Two plies make one full move (e.g. White&#8217;s
+1.e4 is ply 1, Black&#8217;s 1&#8230;&#8203;e5 is ply 2). Atlas tracks search depth and killer moves per ply,
+distinct from <code>moves_counter</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Bitboard</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A 64-bit integer used as a set of squares, one bit per square. Atlas keeps one bitboard
+per piece type/color plus aggregate occupancy bitboards, enabling fast set operations
+(attacks, occupancy tests) via bitwise AND/OR/XOR instead of looping over squares.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Mailbox</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An array with one entry per square holding what&#8217;s on it (here, a <code>[u8; 64]</code> of piece
+codes). Answers "what piece is on this square" directly, which bitboards can&#8217;t do without
+extra work.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Magic bitboard</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A technique for computing a sliding piece&#8217;s (bishop/rook/queen) attacks with a single
+array lookup: a precomputed "magic" multiplier maps the relevant occupancy bits to an index
+into a precomputed attack table. Atlas&#8217;s magic numbers were found offline by the
+<code>magic_numbers</code> binary and hardcoded into <code>movegen/masks/*</code>.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Zobrist hash</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A hash of a board position built by XORing together random constants for each piece-on-
+square, side to move, castling rights, and en passant file, chosen so it can be updated
+incrementally (XOR is its own inverse) instead of recomputed from scratch on every move.
+Atlas maintains its own such hash (<code>zobrian_hash</code>) and, separately, computes a
+Polyglot-compatible one purely to query the opening book.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Polyglot</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A standard, widely-supported binary format for chess opening books (16-byte records:
+hash, move, weight, unused field). Atlas embeds a real Polyglot book (<code>gm2001.bin</code>) and
+implements Polyglot&#8217;s own hash function and move encoding to read it correctly.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Transposition table (TT)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A cache from position hash to previously-computed search results (score, bound type, best
+move, depth searched), so reaching the same position again — via a different move order —
+can reuse that work instead of re-searching it. Atlas&#8217;s TT is a fixed-size, direct-mapped
+table with depth-preferred replacement.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Direct-mapped</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A cache layout where each key maps to exactly one slot (here, <code>hash &amp; (SIZE - 1)</code>), so two
+different keys can collide into the same slot and evict each other — as opposed to a
+cache that can hold multiple entries per slot.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Depth-preferred replacement</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A transposition-table policy that only overwrites an existing entry for the <strong>same</strong>
+position if the new entry was searched at least as deep; entries for a <strong>different</strong> position
+occupying the same slot are always overwritten regardless of depth.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Negamax</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A simplification of minimax for zero-sum, two-player games: instead of separate
+maximizing/minimizing functions, one recursive function always evaluates from the current
+side-to-move&#8217;s perspective and negates the result on return, since one side&#8217;s gain is
+exactly the other&#8217;s loss.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Alpha-beta pruning</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A search optimization that skips exploring moves that can&#8217;t possibly change the outcome
+of the decision one level up, once a move has already been found that&#8217;s "good enough" to
+make the opponent avoid this branch entirely (tracked via an <code>alpha</code>/<code>beta</code> window).</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Fail-soft</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">An alpha-beta variant where the returned score can fall outside the <code>[alpha, beta]</code>
+window that was searched (rather than being clamped to it), which the caller uses to store a
+more informative bound in the transposition table.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Quiescence search</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A capture/promotion/check-evasion-only search run at the leaves of the main search, to
+avoid stopping evaluation in the middle of an unresolved tactical sequence (the horizon
+effect). Stops early via a "stand pat" score when not in check and no capture/promotion
+would improve on just standing still.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Stand pat</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">In quiescence search, the option to not make any capturing move at all and simply use the
+static evaluation as the score — valid whenever the side to move isn&#8217;t in check, since
+being forced to give up a piece is never mandatory.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Horizon effect</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The mistake of evaluating a position as if the search simply stopped mid-tactic (e.g.
+right after a piece is captured but before the recapture), producing a misleadingly good or
+bad score. Quiescence search exists specifically to avoid this.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">MVV-LVA</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Most Valuable Victim – Least Valuable Attacker": a capture-ordering heuristic that tries
+capturing the most valuable enemy piece with the least valuable attacker first, since that&#8217;s
+most likely to win material outright.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Killer move</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A quiet (non-capture, non-promotion) move that caused a beta cutoff earlier at the <strong>same</strong>
+search ply, tried early in sibling branches at that ply on the theory that a tactical idea
+which worked once often works again nearby.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">History heuristic</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A table (indexed by origin/destination square) of how often a quiet move has caused a beta
+cutoff across the whole search tree, used to order quiet moves that aren&#8217;t killers by how
+generally successful they&#8217;ve been.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Beta cutoff</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The point in alpha-beta search where a move is found so good that the opponent, who chose
+the move leading to this position, would never allow it to be reached in the first place —
+so the remaining sibling moves at this node don&#8217;t need to be searched at all.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Iterative deepening</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Repeatedly searching to depth 1, then 2, then 3, and so on, keeping the best move from
+the deepest <strong>fully completed</strong> search — used under a time budget (rather than a fixed depth)
+so a search that runs out of time still has a usable answer from the last completed depth.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Perft</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">"Performance test": counts the exact number of legal move sequences (nodes) reachable
+from a position to a given depth, with well-known correct values for the starting position.
+Any bug in move generation (missing, extra, or wrong moves) almost always changes this count,
+making it a strong correctness check.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">Threefold repetition</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A draw rule: if the exact same position (same pieces, same side to move, same castling
+and en passant rights) occurs three times over the course of a game, either player can claim
+a draw. Atlas checks this via <code>position_history</code> and also treats it as a draw during search.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">En passant</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A special pawn-capture rule: a pawn that advances two squares can be captured, on the very
+next move only, by an enemy pawn as if it had advanced only one square.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">DTO (Data Transfer Object)</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">A plain struct whose only job is to define the shape of data sent over the wire (here,
+JSON between <code>webapp</code> and <code>web_server</code>) — e.g. <code>GameStateDTO</code>, <code>MoveRequest</code> — kept separate
+from the engine&#8217;s own internal types.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GHCR</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">GitHub Container Registry — where the CI pipeline pushes the built <code>chessbot-backend</code> and
+<code>chessbot-webapp</code> Docker images, for the production VM to pull.</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">ACME challenge</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">The HTTP-based proof-of-ownership check Let&#8217;s Encrypt uses before issuing a certificate:
+it requests a specific file under <code>/.well-known/acme-challenge/</code> on the domain being
+certified, which nginx must be able to serve even before HTTPS itself is configured.</p></td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
 Version 0.1<br>
-Last updated 2026-09-08 00:09:46 +0200
+Last updated 2026-09-08 21:50:50 +0200
 </div>
 </div>
 </body>
