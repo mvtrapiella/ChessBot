@@ -49,8 +49,9 @@ body {
   }
 }
 
-#header h1 {
-  color: var(--aheader-text);
+#header h1,
+#header > h1:first-child {
+  color: var(--aheader-text) !important;
   font-family: "Noto Serif", Georgia, serif;
   font-weight: 700;
   letter-spacing: 0.01em;
