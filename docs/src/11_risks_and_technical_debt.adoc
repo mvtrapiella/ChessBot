@@ -3,5 +3,69 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-risks-and-technical-debt]]
 == Risks and Technical Debt
 
-// TODO: known risks (e.g. single e2-micro VM as a single point of failure, memory
-// budget) and deliberate shortcuts taken (e.g. no null-move pruning/PVS/LMR yet).
+[cols="1,3,2", options="header"]
+|===
+| Risk / Debt | Description | Accepted mitigation (if any)
+
+| Single VM, single point of failure
+| The whole stack — reverse proxy, frontend, backend, and certificate renewal — runs on one
+`e2-micro` VM. If that VM goes down, is redeployed, or is out of resources, the whole site
+is unavailable; there is no redundancy or failover.
+| None beyond `restart: unless-stopped` on each container, which recovers from a crashed
+container but not from the VM itself being unavailable.
+
+| All game state is lost on every deploy
+| Games live only in the `web_server` process's memory. Every push to `main` triggers
+`docker compose pull && up -d` on the VM, which recreates the `backend` container — ending
+every in-progress game with no warning to the player.
+| Accepted scope decision (no database, no accounts) documented in
+<<section-architecture-constraints>>; not currently mitigated for players mid-game during a
+deploy.
+
+| No automated tests in CI
+| `.github/workflows/deploy.yml` builds and deploys on every push to `main` without running
+`cargo test` first. The 35+ unit/perft tests that do exist (see
+<<section-quality-requirements>>) only run when a developer remembers to run them locally
+before pushing.
+| None yet — a straightforward addition would be a test job that must pass before
+`build-and-push` runs.
+
+| No rate limiting or abuse protection on the public API
+| `POST /games` and `POST /games/{id}/move` can trigger a "max difficulty" (5-second
+time-budget) search on request, with no authentication and no request throttling. A modest
+number of concurrent max-difficulty requests could saturate the VM's shared vCPUs and
+degrade the site for every other player.
+| None currently in the API or nginx layer.
+
+| Certificate renewal depends on the domain still pointing at the VM
+| `atlas-chessbot.duckdns.org` is a manually-configured DuckDNS record. Nothing in the
+repository automatically keeps that record updated if the VM's IP address changes; the
+`certbot` container's renewal loop only re-issues against whatever the domain currently
+resolves to, and issuance/renewal would silently start failing if the record went stale.
+| None found in the repo — this would need to be handled outside the codebase (a static IP
+reservation and/or a DuckDNS update script), if not already done manually.
+
+| Direct-mapped transposition table can suffer index collisions
+| The transposition table has a fixed number of slots (65,536); two unrelated positions
+that hash to the same index will evict each other, with depth-preferred replacement only
+partially mitigating this (see ADR-3). This is an inherent trade-off of a fixed-size table,
+not a bug, and is standard practice in chess engines — but it does mean search occasionally
+loses a useful cached result it would have kept with an unbounded table.
+| Depth-preferred replacement policy (`tt_store`); size chosen (~1.5 MB) to leave comfortable
+headroom in the 1 GB VM budget rather than to minimize collisions.
+
+| No null-move pruning, PVS, late move reductions, or aspiration windows
+| The search is "plain" alpha-beta with quiescence, a transposition table, and layered move
+ordering (TT move, MVV-LVA, killers, history) — it does not yet include several standard
+techniques that would let it search deeper in the same time. This was a deliberate scope cut
+when the transposition table and move-ordering work was planned, not an oversight.
+| Explicitly deferred as future work, not attempted.
+
+| No disambiguation in generated algebraic notation
+| `describe_move` (in `web_server::notation`) does not disambiguate two identical pieces
+that could both reach the same destination square (e.g. two knights able to reach the same
+square both render as `Nf3`, never `N1f3`/`N5f3`). This only affects the human-readable move
+history text, not game logic or legality.
+| Explicit code comment acknowledging the simplification; not fixed, since it's cosmetic for
+a casual UI.
+|===
