@@ -3,5 +3,142 @@ ifndef::imagesdir[:imagesdir: ../images]
 [[section-glossary]]
 == Glossary
 
-// TODO: domain and engine-specific terms (ply, Zobrist hash, transposition table,
-// killer move, quiescence search, MVV-LVA, ...).
+[cols="1,3", options="header"]
+|===
+| Term | Definition
+
+| Ply
+| A single move by one side (a "half-move"). Two plies make one full move (e.g. White's
+1.e4 is ply 1, Black's 1...e5 is ply 2). Atlas tracks search depth and killer moves per ply,
+distinct from `moves_counter`.
+
+| Bitboard
+| A 64-bit integer used as a set of squares, one bit per square. Atlas keeps one bitboard
+per piece type/color plus aggregate occupancy bitboards, enabling fast set operations
+(attacks, occupancy tests) via bitwise AND/OR/XOR instead of looping over squares.
+
+| Mailbox
+| An array with one entry per square holding what's on it (here, a `[u8; 64]` of piece
+codes). Answers "what piece is on this square" directly, which bitboards can't do without
+extra work.
+
+| Magic bitboard
+| A technique for computing a sliding piece's (bishop/rook/queen) attacks with a single
+array lookup: a precomputed "magic" multiplier maps the relevant occupancy bits to an index
+into a precomputed attack table. Atlas's magic numbers were found offline by the
+`magic_numbers` binary and hardcoded into `movegen/masks/*`.
+
+| Zobrist hash
+| A hash of a board position built by XORing together random constants for each piece-on-
+square, side to move, castling rights, and en passant file, chosen so it can be updated
+incrementally (XOR is its own inverse) instead of recomputed from scratch on every move.
+Atlas maintains its own such hash (`zobrian_hash`) and, separately, computes a
+Polyglot-compatible one purely to query the opening book.
+
+| Polyglot
+| A standard, widely-supported binary format for chess opening books (16-byte records:
+hash, move, weight, unused field). Atlas embeds a real Polyglot book (`gm2001.bin`) and
+implements Polyglot's own hash function and move encoding to read it correctly.
+
+| Transposition table (TT)
+| A cache from position hash to previously-computed search results (score, bound type, best
+move, depth searched), so reaching the same position again — via a different move order —
+can reuse that work instead of re-searching it. Atlas's TT is a fixed-size, direct-mapped
+table with depth-preferred replacement.
+
+| Direct-mapped
+| A cache layout where each key maps to exactly one slot (here, `hash & (SIZE - 1)`), so two
+different keys can collide into the same slot and evict each other — as opposed to a
+cache that can hold multiple entries per slot.
+
+| Depth-preferred replacement
+| A transposition-table policy that only overwrites an existing entry for the *same*
+position if the new entry was searched at least as deep; entries for a *different* position
+occupying the same slot are always overwritten regardless of depth.
+
+| Negamax
+| A simplification of minimax for zero-sum, two-player games: instead of separate
+maximizing/minimizing functions, one recursive function always evaluates from the current
+side-to-move's perspective and negates the result on return, since one side's gain is
+exactly the other's loss.
+
+| Alpha-beta pruning
+| A search optimization that skips exploring moves that can't possibly change the outcome
+of the decision one level up, once a move has already been found that's "good enough" to
+make the opponent avoid this branch entirely (tracked via an `alpha`/`beta` window).
+
+| Fail-soft
+| An alpha-beta variant where the returned score can fall outside the `[alpha, beta]`
+window that was searched (rather than being clamped to it), which the caller uses to store a
+more informative bound in the transposition table.
+
+| Quiescence search
+| A capture/promotion/check-evasion-only search run at the leaves of the main search, to
+avoid stopping evaluation in the middle of an unresolved tactical sequence (the horizon
+effect). Stops early via a "stand pat" score when not in check and no capture/promotion
+would improve on just standing still.
+
+| Stand pat
+| In quiescence search, the option to not make any capturing move at all and simply use the
+static evaluation as the score — valid whenever the side to move isn't in check, since
+being forced to give up a piece is never mandatory.
+
+| Horizon effect
+| The mistake of evaluating a position as if the search simply stopped mid-tactic (e.g.
+right after a piece is captured but before the recapture), producing a misleadingly good or
+bad score. Quiescence search exists specifically to avoid this.
+
+| MVV-LVA
+| "Most Valuable Victim – Least Valuable Attacker": a capture-ordering heuristic that tries
+capturing the most valuable enemy piece with the least valuable attacker first, since that's
+most likely to win material outright.
+
+| Killer move
+| A quiet (non-capture, non-promotion) move that caused a beta cutoff earlier at the *same*
+search ply, tried early in sibling branches at that ply on the theory that a tactical idea
+which worked once often works again nearby.
+
+| History heuristic
+| A table (indexed by origin/destination square) of how often a quiet move has caused a beta
+cutoff across the whole search tree, used to order quiet moves that aren't killers by how
+generally successful they've been.
+
+| Beta cutoff
+| The point in alpha-beta search where a move is found so good that the opponent, who chose
+the move leading to this position, would never allow it to be reached in the first place —
+so the remaining sibling moves at this node don't need to be searched at all.
+
+| Iterative deepening
+| Repeatedly searching to depth 1, then 2, then 3, and so on, keeping the best move from
+the deepest *fully completed* search — used under a time budget (rather than a fixed depth)
+so a search that runs out of time still has a usable answer from the last completed depth.
+
+| Perft
+| "Performance test": counts the exact number of legal move sequences (nodes) reachable
+from a position to a given depth, with well-known correct values for the starting position.
+Any bug in move generation (missing, extra, or wrong moves) almost always changes this count,
+making it a strong correctness check.
+
+| Threefold repetition
+| A draw rule: if the exact same position (same pieces, same side to move, same castling
+and en passant rights) occurs three times over the course of a game, either player can claim
+a draw. Atlas checks this via `position_history` and also treats it as a draw during search.
+
+| En passant
+| A special pawn-capture rule: a pawn that advances two squares can be captured, on the very
+next move only, by an enemy pawn as if it had advanced only one square.
+
+| DTO (Data Transfer Object)
+| A plain struct whose only job is to define the shape of data sent over the wire (here,
+JSON between `webapp` and `web_server`) — e.g. `GameStateDTO`, `MoveRequest` — kept separate
+from the engine's own internal types.
+
+| GHCR
+| GitHub Container Registry — where the CI pipeline pushes the built `chessbot-backend` and
+`chessbot-webapp` Docker images, for the production VM to pull.
+
+| ACME challenge
+| The HTTP-based proof-of-ownership check Let's Encrypt uses before issuing a certificate:
+it requests a specific file under `/.well-known/acme-challenge/` on the domain being
+certified, which nginx must be able to serve even before HTTPS itself is configured.
+|===
