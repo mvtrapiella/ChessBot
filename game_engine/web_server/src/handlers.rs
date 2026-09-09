@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use axum::{
     extract::{Path, State},
@@ -89,9 +89,13 @@ pub async fn create_game(
         user_color,
         search_limit,
         move_history,
+        last_active: Instant::now(),
     };
 
-    state.games().lock().unwrap().insert(game_id, game);
+    let games = state.games();
+    let mut games = games.lock().unwrap();
+    AppState::evict_oldest_if_full(&mut games);
+    games.insert(game_id, game);
 
     Ok(Json(response))
 }
@@ -167,6 +171,7 @@ pub async fn make_move(
         .map_err(|_| ApiError::BadRequest("Illegal move".to_string()))?;
 
     game.position.record_real_move();
+    game.last_active = Instant::now();
 
     let user_ply = game.move_history.len() as u32 + 1;
     game.move_history.push(MoveRecord {
@@ -235,6 +240,7 @@ pub async fn undo_move(
 
     game.position.undo_move();
     game.position.undo_move();
+    game.last_active = Instant::now();
 
     let position_history_len = game.position.position_history.len();
     game.position.position_history.truncate(position_history_len - 2);
